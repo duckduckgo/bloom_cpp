@@ -8,26 +8,27 @@
 #include <math.h>
 #include "BloomFilter.hpp"
 
+using namespace std;
 
 // Forward declarations of free functions
 
 unsigned int calculateHashRounds(unsigned int size, unsigned int maxItems);
 
-unsigned int djb2Hash(std::string text);
+unsigned int djb2Hash(string text);
 
-unsigned int sdbmHash(std::string text);
+unsigned int sdbmHash(string text);
 
 unsigned int doubleHash(unsigned int hash1, unsigned int hash2, unsigned int round);
 
-static void writeVectorToStream(std::vector<bool>& bloomVector, BinaryOutputStream& out);
+static void writeVectorToStream(vector<bool>& bloomVector, BinaryOutputStream& out);
 
-template<typename T> T pack(const std::vector<bool>& filter, const size_t block, const size_t bits);
+template<typename T> T pack(const vector<bool>& filter, const size_t block, const size_t bits);
 
-static std::vector<bool> readVectorFromFile(std::string path);
+static vector<bool> readVectorFromFile(string path);
 
-static std::vector<bool> readVectorFromStream(BinaryInputStream& in);
+static vector<bool> readVectorFromStream(BinaryInputStream& in);
 
-void unpackIntoVector(std::vector<bool>& bloomVector,
+void unpackIntoVector(vector<bool>& bloomVector,
                       const size_t offset,
                       const size_t bitsInThisBlock,
                       BinaryInputStream& in);
@@ -38,11 +39,11 @@ void unpackIntoVector(std::vector<bool>& bloomVector,
 BloomFilter::BloomFilter(unsigned int maxItems, double targetProbability)
 {
     unsigned int size = ceil((maxItems * log(targetProbability)) / log(1.0 / (pow(2.0, log(2.0)))));
-    bloomVector = std::vector<bool>(size);
+    bloomVector = vector<bool>(size);
     hashRounds = calculateHashRounds(size, maxItems);
 }
 
-BloomFilter::BloomFilter(std::string importFilePath, unsigned int maxItems)
+BloomFilter::BloomFilter(string importFilePath, unsigned int maxItems)
 {
     bloomVector = readVectorFromFile(importFilePath);
     hashRounds = calculateHashRounds((unsigned int) bloomVector.size(), maxItems);
@@ -59,7 +60,7 @@ unsigned int calculateHashRounds(unsigned int size, unsigned int maxItems)
     return round(log(2.0) * size / maxItems);
 }
 
-void BloomFilter::add(std::string element)
+void BloomFilter::add(string element)
 {
     unsigned int hash1 = djb2Hash(element);
     unsigned int hash2 = sdbmHash(element);
@@ -72,7 +73,7 @@ void BloomFilter::add(std::string element)
     }
 }
 
-bool BloomFilter::contains(std::string element)
+bool BloomFilter::contains(string element)
 {
     unsigned int hash1 = djb2Hash(element);
     unsigned int hash2 = sdbmHash(element);
@@ -81,7 +82,7 @@ bool BloomFilter::contains(std::string element)
     {
         unsigned int hash = doubleHash(hash1, hash2, i);
         unsigned int index = hash % bloomVector.size();
-        if (bloomVector[index] == false)
+        if (!bloomVector[index])
         {
             return false;
         }
@@ -90,7 +91,7 @@ bool BloomFilter::contains(std::string element)
     return true;
 }
 
-unsigned int djb2Hash(std::string text)
+unsigned int djb2Hash(string text)
 {
     unsigned int hash = 5381;
     for (auto iterator = text.begin(); iterator != text.end(); iterator++)
@@ -100,7 +101,7 @@ unsigned int djb2Hash(std::string text)
     return hash;
 }
 
-unsigned int sdbmHash(std::string text)
+unsigned int sdbmHash(string text)
 {
     unsigned int hash = 0;
     for (auto iterator = text.begin(); iterator != text.end(); iterator++)
@@ -123,9 +124,9 @@ unsigned int doubleHash(unsigned int hash1, unsigned int hash2, unsigned int rou
     }
 }
 
-void BloomFilter::writeToFile(std::string path)
+void BloomFilter::writeToFile(string path)
 {
-    std::basic_ofstream<BlockType> out(path.c_str(), std::ofstream::binary);
+    basic_ofstream<BlockType> out(path.c_str(), ofstream::binary);
     writeVectorToStream(bloomVector, out);
 }
 
@@ -135,7 +136,7 @@ void BloomFilter::writeToStream(BinaryOutputStream& out)
     writeVectorToStream(bloomVector, out);
 }
 
-void writeVectorToStream(std::vector<bool>& bloomVector, BinaryOutputStream& out)
+void writeVectorToStream(vector<bool>& bloomVector, BinaryOutputStream& out)
 {
     const size_t elements = bloomVector.size();
     out.put(((elements & 0x000000ff) >> 0));
@@ -159,7 +160,7 @@ void writeVectorToStream(std::vector<bool>& bloomVector, BinaryOutputStream& out
     }
 }
 
-template<typename T> T pack(const std::vector<bool>& filter, const size_t block, const size_t bits)
+template<typename T> T pack(const vector<bool>& filter, const size_t block, const size_t bits)
 {
     const size_t sizeOfTInBits = sizeof(T) * 8;
     assert( bits <= sizeOfTInBits );
@@ -173,13 +174,13 @@ template<typename T> T pack(const std::vector<bool>& filter, const size_t block,
     return buffer;
 }
 
-std::vector<bool> readVectorFromFile(std::string path)
+vector<bool> readVectorFromFile(string path)
 {
-    std::basic_ifstream<BlockType> inFile(path, std::ifstream::binary);
+    basic_ifstream<BlockType> inFile(path, ifstream::binary);
     return readVectorFromStream(inFile);
 }
 
-std::vector<bool> readVectorFromStream(BinaryInputStream& in)
+vector<bool> readVectorFromStream(BinaryInputStream& in)
 {
     const size_t component1 = in.get() << 0;
     const size_t component2 = in.get() << 8;
@@ -187,7 +188,7 @@ std::vector<bool> readVectorFromStream(BinaryInputStream& in)
     const size_t component4 = in.get() << 24;
     const size_t elementCount = component1 + component2 + component3 + component4;
     
-    std::vector<bool> bloomVector(elementCount);
+    vector<bool> bloomVector(elementCount);
     
     const size_t bitsPerBlock = sizeof(BlockType) * 8;
     const size_t fullBlocks = elementCount / bitsPerBlock;
@@ -207,7 +208,7 @@ std::vector<bool> readVectorFromStream(BinaryInputStream& in)
     return bloomVector;
 }
 
-void unpackIntoVector(std::vector<bool>& bloomVector,
+void unpackIntoVector(vector<bool>& bloomVector,
                       const size_t offset,
                       const size_t bitsInThisBlock,
                       BinaryInputStream& in)
