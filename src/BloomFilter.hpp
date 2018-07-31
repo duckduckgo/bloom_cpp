@@ -3,9 +3,11 @@
 #include <vector>
 #include <iterator>
 
+using namespace std;
+
 typedef char BlockType;
-typedef std::basic_istream<BlockType> BinaryInputStream;
-typedef std::basic_ostream<BlockType> BinaryOutputStream;
+typedef basic_istream<BlockType> BinaryInputStream;
+typedef basic_ostream<BlockType> BinaryOutputStream;
 
 /*
  Bloom filter with djb2 and sdbm hashing. It is a loose C++ port of
@@ -15,13 +17,20 @@ class BloomFilter {
 
 public:
     BloomFilter(unsigned int maxItems, double targetProbability);
-    BloomFilter(std::string importFilePath, unsigned int maxItems);
-    BloomFilter(BinaryInputStream& in, unsigned int maxItems);
-    void add(std::string element);
-    bool contains(std::string element);
-    void writeToFile(std::string exportFilePath);
-    void writeToStream(BinaryOutputStream& out);
+
+    BloomFilter(string importFilePath, unsigned int maxItems);
+
+    BloomFilter(BinaryInputStream &in, unsigned int maxItems);
+
+    void add(string element);
+
+    bool contains(string element);
+
+    void writeToFile(string exportFilePath);
+
+    void writeToStream(BinaryOutputStream &out);
+
 private:
     unsigned int hashRounds;
-    std::vector<bool> bloomVector;
+    vector<bool> bloomVector;
 };
