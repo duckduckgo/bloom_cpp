@@ -6,3 +6,5 @@ target_include_directories(Catch PUBLIC ../third-party/catch2/single_include/cat
 add_executable (RunTests BloomFilterTest.cpp)
 target_link_libraries (RunTests LINK_PUBLIC Catch)
 target_link_libraries (RunTests LINK_PUBLIC BloomFilter)
+
+add_test(NAME RunTests COMMAND RunTests)
