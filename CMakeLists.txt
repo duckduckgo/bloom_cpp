@@ -7,4 +7,5 @@ set(CMAKE_CXX_COMPILER "clang++")
 enable_testing()
 
 add_subdirectory(src)
+add_subdirectory(utils)
 add_subdirectory(test)
