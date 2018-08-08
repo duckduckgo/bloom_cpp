@@ -5,7 +5,7 @@
 
 // Forward declarations
 
-static unsigned int calculateHashRounds(unsigned int size, unsigned int maxItems);
+static size_t calculateHashRounds(size_t size, size_t maxItems);
 
 static unsigned int djb2Hash(string text);
 
@@ -29,24 +29,24 @@ static void unpackIntoVector(vector<bool> &bloomVector,
 
 // Implementation
 
-BloomFilter::BloomFilter(unsigned int maxItems, double targetProbability) {
-    unsigned int size = ceil((maxItems * log(targetProbability)) / log(1.0 / (pow(2.0, log(2.0)))));
+BloomFilter::BloomFilter(size_t maxItems, double targetProbability) {
+    auto size = (size_t) ceil((maxItems * log(targetProbability)) / log(1.0 / (pow(2.0, log(2.0)))));
     bloomVector = vector<bool>(size);
     hashRounds = calculateHashRounds(size, maxItems);
 }
 
-BloomFilter::BloomFilter(string importFilePath, unsigned int maxItems) {
+BloomFilter::BloomFilter(string importFilePath, size_t maxItems) {
     bloomVector = readVectorFromFile(importFilePath);
-    hashRounds = calculateHashRounds((unsigned int) bloomVector.size(), maxItems);
+    hashRounds = calculateHashRounds(bloomVector.size(), maxItems);
 }
 
-BloomFilter::BloomFilter(BinaryInputStream &in, unsigned int maxItems) {
+BloomFilter::BloomFilter(BinaryInputStream &in, size_t maxItems) {
     bloomVector = readVectorFromStream(in);
-    hashRounds = calculateHashRounds((unsigned int) bloomVector.size(), maxItems);
+    hashRounds = calculateHashRounds(bloomVector.size(), maxItems);
 }
 
-static unsigned int calculateHashRounds(unsigned int size, unsigned int maxItems) {
-    return round(log(2.0) * size / maxItems);
+static size_t calculateHashRounds(size_t size, size_t maxItems) {
+    return (size_t) round(log(2.0) * size / maxItems);
 }
 
 void BloomFilter::add(string element) {
@@ -55,7 +55,7 @@ void BloomFilter::add(string element) {
 
     for (int i = 0; i < hashRounds; i++) {
         unsigned int hash = doubleHash(hash1, hash2, i);
-        unsigned int index = hash % bloomVector.size();
+        size_t index = hash % bloomVector.size();
         bloomVector[index] = true;
     }
 }
@@ -66,7 +66,7 @@ bool BloomFilter::contains(string element) {
 
     for (int i = 0; i < hashRounds; i++) {
         unsigned int hash = doubleHash(hash1, hash2, i);
-        unsigned int index = hash % bloomVector.size();
+        size_t index = hash % bloomVector.size();
         if (!bloomVector[index]) {
             return false;
         }

@@ -16,11 +16,11 @@ typedef basic_ostream<BlockType> BinaryOutputStream;
 class BloomFilter {
 
 public:
-    BloomFilter(unsigned int maxItems, double targetProbability);
+    BloomFilter(size_t maxItems, double targetProbability);
 
-    BloomFilter(string importFilePath, unsigned int maxItems);
+    BloomFilter(string importFilePath, size_t maxItems);
 
-    BloomFilter(BinaryInputStream &in, unsigned int maxItems);
+    BloomFilter(BinaryInputStream &in, size_t maxItems);
 
     void add(string element);
 
@@ -31,6 +31,6 @@ public:
     void writeToStream(BinaryOutputStream &out);
 
 private:
-    unsigned int hashRounds;
+    size_t hashRounds;
     vector<bool> bloomVector;
 };
