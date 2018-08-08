@@ -1,6 +1,6 @@
-#include <stdio.h>
+#include <cstdio>
 #include <fstream>
-#include <math.h>
+#include <cmath>
 #include "BloomFilter.hpp"
 
 // Forward declarations
@@ -15,15 +15,15 @@ static unsigned int doubleHash(unsigned int hash1, unsigned int hash2, unsigned 
 
 static void writeVectorToStream(vector<bool> &bloomVector, BinaryOutputStream &out);
 
-static BlockType pack(const vector<bool> &filter, const size_t block, const size_t bits);
+static BlockType pack(const vector<bool> &filter, size_t block, size_t bits);
 
 static vector<bool> readVectorFromFile(const string &path);
 
 static vector<bool> readVectorFromStream(BinaryInputStream &in);
 
 static void unpackIntoVector(vector<bool> &bloomVector,
-                             const size_t offset,
-                             const size_t bitsInThisBlock,
+                             size_t offset,
+                             size_t bitsInThisBlock,
                              BinaryInputStream &in);
 
 
@@ -133,7 +133,7 @@ static void writeVectorToStream(vector<bool> &bloomVector, BinaryOutputStream &o
     }
 }
 
-static BlockType pack(const vector<bool> &filter, const size_t block, const size_t bits) {
+static BlockType pack(const vector<bool> &filter, size_t block, size_t bits) {
 
     const size_t sizeOfTInBits = sizeof(BlockType) * 8;
     assert(bits <= sizeOfTInBits);
@@ -177,8 +177,8 @@ static vector<bool> readVectorFromStream(BinaryInputStream &in) {
 }
 
 static void unpackIntoVector(vector<bool> &bloomVector,
-                             const size_t offset,
-                             const size_t bitsInThisBlock,
+                             size_t offset,
+                             size_t bitsInThisBlock,
                              BinaryInputStream &in) {
 
     const BlockType block = in.get();

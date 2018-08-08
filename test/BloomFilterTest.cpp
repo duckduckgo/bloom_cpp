@@ -1,5 +1,4 @@
 #include <iostream>
-#include <vector>
 #include <uuid/uuid.h>
 #include "BloomFilter.hpp"
 
@@ -25,16 +24,16 @@ static string createRandomString() {
     return (char *) stringId;
 }
 
-static vector<string> createRandomStrings(unsigned int count) {
-    vector<string> vector(count);
+static set<string> createRandomStrings(unsigned int count) {
+    set<string> set;
     for (int i = 0; i < count; i++) {
-        vector[i] = createRandomString();
+        set.insert(createRandomString());
     }
-    return vector;
+    return set;
 }
 
-static bool contains(vector<string> vector, string element) {
-    return find(vector.begin(), vector.end(), element) != vector.end();
+static bool contains(set<string> set, const string &element) {
+    return set.find(element) != set.end();
 }
 
 TEST_CASE("when BloomFilter is empty then contains is false") {
@@ -53,20 +52,20 @@ TEST_CASE("when BloomFilter contains items then lookup results are within range"
     unsigned int falsePositives = 0, truePositives = 0, falseNegatives = 0, trueNegatives = 0;
 
     BloomFilter testee(FILTER_ELEMENT_COUNT, TARGET_FALSE_POSITIVE_RATE);
-    vector<string> bloomData = createRandomStrings(FILTER_ELEMENT_COUNT);
-    vector<string> testData = createRandomStrings(ADDITIONAL_TEST_DATA_ELEMENT_COUNT);
-    testData.insert(end(testData), begin(bloomData), end(bloomData));
+    set<string> bloomData = createRandomStrings(FILTER_ELEMENT_COUNT);
+    set<string> testData = createRandomStrings(ADDITIONAL_TEST_DATA_ELEMENT_COUNT);
+    testData.insert(bloomData.begin(), bloomData.end());
 
     for (const auto &i : bloomData) {
         testee.add(i);
     }
 
-    for (int i = 0; i < testData.size(); i++) {
-        bool result = testee.contains(testData[i]);
-        if (contains(bloomData, testData[i]) && !result) falseNegatives++;
-        if (!contains(bloomData, testData[i]) && result) falsePositives++;
-        if (!contains(bloomData, testData[i]) && !result) trueNegatives++;
-        if (contains(bloomData, testData[i]) && result) truePositives++;
+    for (const auto &element : testData) {
+        bool result = testee.contains(element);
+        if (contains(bloomData, element) && !result) falseNegatives++;
+        if (!contains(bloomData, element) && result) falsePositives++;
+        if (!contains(bloomData, element) && !result) trueNegatives++;
+        if (contains(bloomData, element) && result) truePositives++;
     }
 
     double falsePositiveRate = falsePositives / testData.size();
