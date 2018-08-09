@@ -36,34 +36,56 @@ int main(int argc, char *argv[], char *envp[]) {
     string bloomOutputFile = string(argv[3]) + "-bloom.bin";
     string bloomSpecOutputFile = string(argv[3]) + "-bloom-spec.json";
     string whitelistOutputFile = string(argv[3]) + "-whitelist.json";
-    double errorRate = 0.0001;
+    double errorRate = 0.00001;
 
     cout << "Generating filter" << endl;
     set<string> bloomInput = readStringsFromFile(bloomDataFile);
-    BloomFilter filter((int) bloomInput.size(), errorRate);
+    if (bloomInput.size() == 0) {
+        cerr << "Error there was no data in " << bloomDataFile << endl;
+        return 1;
+    }
+    BloomFilter filter(bloomInput.size(), errorRate);
     for (const string &entry : bloomInput) {
-        if (!entry.empty()) {
-            filter.add(entry);
-        }
+        filter.add(entry);
     }
     filter.writeToFile(bloomOutputFile);
 
-    cout << "Generating whitelist" << endl;
+    cout << "Reading generated filter for validation" << endl;
+    filter = BloomFilter(bloomOutputFile, bloomInput.size());
+
+    cout << "Validating data and generating whitelist" << endl;
     set<string> validationData = readStringsFromFile(validationDataFile);
+    if (validationData.size() == 0) {
+        cerr << "Error there was no data in " << validationDataFile << endl;
+        return 1;
+    }
     vector<string> whitelistData;
     for (const string &entry : validationData) {
         bool isInFilter = bloomInput.find(entry) != bloomInput.end();
         if (filter.contains(entry) && !isInFilter) {
             whitelistData.push_back(entry);
         }
+        if (!filter.contains(entry) && isInFilter) {
+            cerr << "Error false negative on" << entry << "this should not occur" << endl;
+            return 1;
+        }
     }
     writeWhitelistToFile(whitelistData, whitelistOutputFile);
+
+    double falsePositiveRate = whitelistData.size() / (double) validationData.size();
+    cout << "Actual false positive rate was " << falsePositiveRate << endl;
+    if (falsePositiveRate > errorRate * 1.1) {
+        cerr << "Error false positive rate is too high" << endl;
+        return 1;
+    }
 
     cout << "Generating filter specification" << endl;
     string sha256 = generateSha256(bloomOutputFile);
     string spec = generateSpecification(bloomInput.size(), errorRate, sha256);
     ofstream specOutput(bloomSpecOutputFile);
     specOutput << spec;
+
+    cout << "Done!" << endl;
 }
 
 static set<string> readStringsFromFile(const string &fileName) {
@@ -73,7 +95,9 @@ static set<string> readStringsFromFile(const string &fileName) {
     string line;
     ifstream file(fileName);
     while (getline(file, line)) {
-        data.insert(line);
+        if (!line.empty()) {
+            data.insert(line);
+        }
     }
 
     return data;
