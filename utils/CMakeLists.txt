@@ -3,9 +3,9 @@ cmake_minimum_required(VERSION 3.5)
 if(APPLE)
     include_directories(/usr/local/opt/openssl/include)
     link_directories(/usr/local/opt/openssl/lib)
-    link_libraries(crypto)
 endif()
 
+link_libraries(crypto)
 add_executable (GenerateFilter GenerateFilter.cpp)
 
 if(APPLE)

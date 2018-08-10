@@ -17,6 +17,7 @@
 #include <cstdio>
 #include <fstream>
 #include <cmath>
+#include <assert.h>
 #include "BloomFilter.hpp"
 
 // Forward declarations
