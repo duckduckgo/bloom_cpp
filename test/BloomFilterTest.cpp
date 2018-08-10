@@ -34,10 +34,10 @@ static string createRandomString() {
     uuid_t id;
     uuid_generate(id);
 
-    uuid_string_t stringId;
+    char* stringId;
     uuid_unparse(id, stringId);
 
-    return (char *) stringId;
+    return stringId;
 }
 
 static set<string> createRandomStrings(unsigned int count) {
