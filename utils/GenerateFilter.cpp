@@ -90,10 +90,10 @@ int main(int argc, char *argv[], char *envp[]) {
     }
     writeWhitelistToFile(whitelistData, whitelistOutputFile);
 
-    double falsePositiveRate = whitelistData.size() / (double) validationData.size();
-    cout << "Actual false positive rate was " << falsePositiveRate << endl;
-    if (falsePositiveRate > errorRate * 1.1) {
-        cerr << "Error false positive rate is too high" << endl;
+    double actualErrorRate = whitelistData.size() / (double) validationData.size();
+    cout << "Actual error rate is " << actualErrorRate << endl;
+    if (actualErrorRate > errorRate * 1.1) {
+        cerr << "Error rate is too high" << endl;
         return 1;
     }
 
