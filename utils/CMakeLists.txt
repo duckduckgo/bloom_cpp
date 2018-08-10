@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.5)
 
 if(APPLE)
     include_directories(/usr/local/opt/openssl/include)
