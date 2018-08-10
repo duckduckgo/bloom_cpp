@@ -56,10 +56,11 @@ int main(int argc, char *argv[], char *envp[]) {
 
     cout << "Generating filter" << endl;
     set<string> bloomInput = readStringsFromFile(bloomDataFile);
-    if (bloomInput.size() == 0) {
+    if (bloomInput.empty()) {
         cerr << "Error there was no data in " << bloomDataFile << endl;
         return 1;
     }
+
     BloomFilter filter(bloomInput.size(), errorRate);
     for (const string &entry : bloomInput) {
         filter.add(entry);
@@ -71,10 +72,11 @@ int main(int argc, char *argv[], char *envp[]) {
 
     cout << "Validating data and generating whitelist" << endl;
     set<string> validationData = readStringsFromFile(validationDataFile);
-    if (validationData.size() == 0) {
+    if (validationData.empty()) {
         cerr << "Error there was no data in " << validationDataFile << endl;
         return 1;
     }
+
     vector<string> whitelistData;
     for (const string &entry : validationData) {
         bool isInFilter = bloomInput.find(entry) != bloomInput.end();
