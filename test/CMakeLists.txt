@@ -1,4 +1,8 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.5)
+
+if(UNIX AND NOT APPLE)
+    link_libraries(uuid)
+endif()
 
 add_library(Catch ../third-party/catch2/single_include/catch2/catch.hpp empty.cpp)
 target_include_directories(Catch PUBLIC ../third-party/catch2/single_include/catch2)

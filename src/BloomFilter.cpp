@@ -1,11 +1,28 @@
-#include <stdio.h>
+/*
+ * Copyright (c) 2018 DuckDuckGo
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include <cstdio>
 #include <fstream>
-#include <math.h>
+#include <cmath>
+#include <assert.h>
 #include "BloomFilter.hpp"
 
 // Forward declarations
 
-static unsigned int calculateHashRounds(unsigned int size, unsigned int maxItems);
+static size_t calculateHashRounds(size_t size, size_t maxItems);
 
 static unsigned int djb2Hash(string text);
 
@@ -15,38 +32,38 @@ static unsigned int doubleHash(unsigned int hash1, unsigned int hash2, unsigned 
 
 static void writeVectorToStream(vector<bool> &bloomVector, BinaryOutputStream &out);
 
-static BlockType pack(const vector<bool> &filter, const size_t block, const size_t bits);
+static BlockType pack(const vector<bool> &filter, size_t block, size_t bits);
 
 static vector<bool> readVectorFromFile(const string &path);
 
 static vector<bool> readVectorFromStream(BinaryInputStream &in);
 
 static void unpackIntoVector(vector<bool> &bloomVector,
-                             const size_t offset,
-                             const size_t bitsInThisBlock,
+                             size_t offset,
+                             size_t bitsInThisBlock,
                              BinaryInputStream &in);
 
 
 // Implementation
 
-BloomFilter::BloomFilter(unsigned int maxItems, double targetProbability) {
-    unsigned int size = ceil((maxItems * log(targetProbability)) / log(1.0 / (pow(2.0, log(2.0)))));
+BloomFilter::BloomFilter(size_t maxItems, double targetProbability) {
+    auto size = (size_t) ceil((maxItems * log(targetProbability)) / log(1.0 / (pow(2.0, log(2.0)))));
     bloomVector = vector<bool>(size);
     hashRounds = calculateHashRounds(size, maxItems);
 }
 
-BloomFilter::BloomFilter(string importFilePath, unsigned int maxItems) {
+BloomFilter::BloomFilter(string importFilePath, size_t maxItems) {
     bloomVector = readVectorFromFile(importFilePath);
-    hashRounds = calculateHashRounds((unsigned int) bloomVector.size(), maxItems);
+    hashRounds = calculateHashRounds(bloomVector.size(), maxItems);
 }
 
-BloomFilter::BloomFilter(BinaryInputStream &in, unsigned int maxItems) {
+BloomFilter::BloomFilter(BinaryInputStream &in, size_t maxItems) {
     bloomVector = readVectorFromStream(in);
-    hashRounds = calculateHashRounds((unsigned int) bloomVector.size(), maxItems);
+    hashRounds = calculateHashRounds(bloomVector.size(), maxItems);
 }
 
-static unsigned int calculateHashRounds(unsigned int size, unsigned int maxItems) {
-    return round(log(2.0) * size / maxItems);
+static size_t calculateHashRounds(size_t size, size_t maxItems) {
+    return (size_t) round(log(2.0) * size / maxItems);
 }
 
 void BloomFilter::add(string element) {
@@ -55,7 +72,7 @@ void BloomFilter::add(string element) {
 
     for (int i = 0; i < hashRounds; i++) {
         unsigned int hash = doubleHash(hash1, hash2, i);
-        unsigned int index = hash % bloomVector.size();
+        size_t index = hash % bloomVector.size();
         bloomVector[index] = true;
     }
 }
@@ -66,7 +83,7 @@ bool BloomFilter::contains(string element) {
 
     for (int i = 0; i < hashRounds; i++) {
         unsigned int hash = doubleHash(hash1, hash2, i);
-        unsigned int index = hash % bloomVector.size();
+        size_t index = hash % bloomVector.size();
         if (!bloomVector[index]) {
             return false;
         }
@@ -133,7 +150,7 @@ static void writeVectorToStream(vector<bool> &bloomVector, BinaryOutputStream &o
     }
 }
 
-static BlockType pack(const vector<bool> &filter, const size_t block, const size_t bits) {
+static BlockType pack(const vector<bool> &filter, size_t block, size_t bits) {
 
     const size_t sizeOfTInBits = sizeof(BlockType) * 8;
     assert(bits <= sizeOfTInBits);
@@ -177,8 +194,8 @@ static vector<bool> readVectorFromStream(BinaryInputStream &in) {
 }
 
 static void unpackIntoVector(vector<bool> &bloomVector,
-                             const size_t offset,
-                             const size_t bitsInThisBlock,
+                             size_t offset,
+                             size_t bitsInThisBlock,
                              BinaryInputStream &in) {
 
     const BlockType block = in.get();
