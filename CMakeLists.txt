@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 project(ddg_bloom_cpp)
 
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_COMPILER "clang++")
+set(CMAKE_CXX_COMPILER "g++")
 
 enable_testing()
 

@@ -91,11 +91,7 @@ int main(int argc, char *argv[], char *envp[]) {
     writeWhitelistToFile(whitelistData, whitelistOutputFile);
 
     double actualErrorRate = whitelistData.size() / (double) validationData.size();
-    cout << "Actual error rate is " << actualErrorRate << endl;
-    if (actualErrorRate > errorRate * 1.1) {
-        cerr << "Error rate is too high" << endl;
-        return 1;
-    }
+    cout << "Actual error rate was " << actualErrorRate << endl;
 
     cout << "Generating filter specification" << endl;
     string sha256 = generateSha256(bloomOutputFile);
