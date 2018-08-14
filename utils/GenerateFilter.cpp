@@ -52,7 +52,7 @@ int main(int argc, char *argv[], char *envp[]) {
     string bloomOutputFile = string(argv[3]) + "-bloom.bin";
     string bloomSpecOutputFile = string(argv[3]) + "-bloom-spec.json";
     string whitelistOutputFile = string(argv[3]) + "-whitelist.json";
-    double errorRate = 0.00001;
+    double errorRate = 0.000001;
 
     cout << "Generating filter" << endl;
     set<string> bloomInput = readStringsFromFile(bloomDataFile);
