@@ -40,7 +40,7 @@ static void replace(string &string, const std::string &fromString, const std::st
 
 // Bloom generation script
 
-int main(int argc, char *argv[], char *envp[]) {
+int main(int argc, char *argv[]) {
 
     if (argc != 4) {
         cerr << "Usage: INPUT_FILE VALIDATION_FILE OUTPUT_FILES_PREFIX" << endl;
