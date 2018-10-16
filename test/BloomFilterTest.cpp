@@ -34,7 +34,8 @@ static string createRandomString() {
     uuid_t id;
     uuid_generate(id);
 
-    char* stringId;
+    constexpr int MAX_UUID_UNPARSE_LENGTH = 37;
+    char stringId[MAX_UUID_UNPARSE_LENGTH] = {};
     uuid_unparse(id, stringId);
 
     return stringId;
