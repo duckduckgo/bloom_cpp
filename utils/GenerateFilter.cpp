@@ -121,7 +121,7 @@ static void writeWhitelistToFile(const vector<string> &whitelistData, const stri
     ofstream file(fileName);
     file << "{ \"data\": [" << endl;
 
-    for (int i = 0; i < whitelistData.size(); i++) {
+    for (size_t i = 0; i < whitelistData.size(); i++) {
         file << "\"" << whitelistData[i] << "\"";
         if (i < whitelistData.size() - 1) {
             file << ",";

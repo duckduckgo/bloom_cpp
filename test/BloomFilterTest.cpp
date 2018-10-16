@@ -43,7 +43,7 @@ static string createRandomString() {
 
 static set<string> createRandomStrings(unsigned int count) {
     set<string> set;
-    for (int i = 0; i < count; i++) {
+    for (unsigned int i = 0; i < count; i++) {
         set.insert(createRandomString());
     }
     return set;
