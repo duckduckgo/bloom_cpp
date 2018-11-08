@@ -40,7 +40,7 @@ static void replace(string &string, const std::string &fromString, const std::st
 
 // Bloom generation script
 
-int main(int argc, char *argv[], char *envp[]) {
+int main(int argc, char *argv[]) {
 
     if (argc != 4) {
         cerr << "Usage: INPUT_FILE VALIDATION_FILE OUTPUT_FILES_PREFIX" << endl;
@@ -121,7 +121,7 @@ static void writeWhitelistToFile(const vector<string> &whitelistData, const stri
     ofstream file(fileName);
     file << "{ \"data\": [" << endl;
 
-    for (int i = 0; i < whitelistData.size(); i++) {
+    for (size_t i = 0; i < whitelistData.size(); i++) {
         file << "\"" << whitelistData[i] << "\"";
         if (i < whitelistData.size() - 1) {
             file << ",";
