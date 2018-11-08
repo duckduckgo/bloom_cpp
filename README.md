@@ -21,15 +21,19 @@ A convenience utility that uses the main filter library to generate a binary blo
 
 Run via the `./make_filter.sh` script with appropriate parameters.
 
-**Additional system dependencies**: `openssl` package. This is often available on linux but needs to be installed
- for macOS. We assume this will be installed via `brew` to `/usr/local/opt/openssl/`
+**Additional system dependencies**
+
+**openssl:** This is often available on linux but needs to be installed
+ for macOS where we assume this will be installed via `brew` to `/usr/local/opt/openssl/`
 
 ### Tests
 Project unit tests. We use the Catch library at https://github.com/catchorg/Catch2 for unit testing.
 We include this as a submodule, run `git submodule update --init --recursive` to pull down the submodule.
 Run the `./run_tests.sh` script to execute the unit tests.
 
-**Additional system dependencies:** uuid package. This is generally available on macOS. On debian based linux systems 
+**Additional system dependencies**
+
+**uuid**: This is generally available on macOS. On debian based linux systems 
 install `uuid-dev`.
 
 ## Reporting Bugs
