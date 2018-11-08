@@ -70,7 +70,7 @@ void BloomFilter::add(string element) {
     unsigned int hash1 = djb2Hash(element);
     unsigned int hash2 = sdbmHash(element);
 
-    for (int i = 0; i < hashRounds; i++) {
+    for (size_t i = 0; i < hashRounds; i++) {
         unsigned int hash = doubleHash(hash1, hash2, i);
         size_t index = hash % bloomVector.size();
         bloomVector[index] = true;
@@ -81,7 +81,7 @@ bool BloomFilter::contains(string element) {
     unsigned int hash1 = djb2Hash(element);
     unsigned int hash2 = sdbmHash(element);
 
-    for (int i = 0; i < hashRounds; i++) {
+    for (size_t i = 0; i < hashRounds; i++) {
         unsigned int hash = doubleHash(hash1, hash2, i);
         size_t index = hash % bloomVector.size();
         if (!bloomVector[index]) {
@@ -155,7 +155,7 @@ static BlockType pack(const vector<bool> &filter, size_t block, size_t bits) {
     const size_t sizeOfTInBits = sizeof(BlockType) * 8;
     assert(bits <= sizeOfTInBits);
     BlockType buffer = 0;
-    for (int j = 0; j < bits; ++j) {
+    for (size_t j = 0; j < bits; ++j) {
         const size_t offset = (block * sizeOfTInBits) + j;
         const BlockType bit = filter[offset] << j;
         buffer |= bit;
@@ -179,7 +179,7 @@ static vector<bool> readVectorFromStream(BinaryInputStream &in) {
     vector<bool> bloomVector(elementCount);
     const size_t bitsPerBlock = sizeof(BlockType) * 8;
     const size_t fullBlocks = elementCount / bitsPerBlock;
-    for (int i = 0; i < fullBlocks; ++i) {
+    for (size_t i = 0; i < fullBlocks; ++i) {
         const size_t offset = i * bitsPerBlock;
         unpackIntoVector(bloomVector, offset, bitsPerBlock, in);
     }
@@ -200,7 +200,7 @@ static void unpackIntoVector(vector<bool> &bloomVector,
 
     const BlockType block = in.get();
 
-    for (int j = 0; j < bitsInThisBlock; j++) {
+    for (size_t j = 0; j < bitsInThisBlock; j++) {
         const BlockType mask = 1 << j;
         bloomVector[offset + j] = (block & mask) != 0;
     }

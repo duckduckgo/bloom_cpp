@@ -34,7 +34,8 @@ static string createRandomString() {
     uuid_t id;
     uuid_generate(id);
 
-    char* stringId;
+    constexpr int MAX_UUID_UNPARSE_LENGTH = 37;
+    char stringId[MAX_UUID_UNPARSE_LENGTH] = {};
     uuid_unparse(id, stringId);
 
     return stringId;
@@ -42,7 +43,7 @@ static string createRandomString() {
 
 static set<string> createRandomStrings(unsigned int count) {
     set<string> set;
-    for (int i = 0; i < count; i++) {
+    for (unsigned int i = 0; i < count; i++) {
         set.insert(createRandomString());
     }
     return set;
