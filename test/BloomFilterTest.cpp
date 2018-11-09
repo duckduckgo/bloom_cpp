@@ -25,10 +25,10 @@
 
 using namespace std;
 
-static const unsigned int FILTER_ELEMENT_COUNT = 1000;
-static const unsigned int ADDITIONAL_TEST_DATA_ELEMENT_COUNT = 9000;
+static const unsigned int FILTER_ELEMENT_COUNT = 5000;
+static const unsigned int ADDITIONAL_TEST_DATA_ELEMENT_COUNT = 5000;
 static const double TARGET_ERROR_RATE = 0.001;
-static const double ACCEPTABLE_ERROR_RATE = TARGET_ERROR_RATE * 1.1;
+static const double ACCEPTABLE_ERROR_RATE = TARGET_ERROR_RATE * 2;
 
 static string createRandomString() {
     uuid_t id;
@@ -85,7 +85,7 @@ TEST_CASE("when BloomFilter contains items then error is within range") {
         if (contains(bloomData, element) && result) truePositives++;
     }
 
-    double errorRate = (falsePositives + falseNegatives) / testData.size();
+    double errorRate = (falsePositives + falseNegatives) / (double) testData.size();
     REQUIRE(falseNegatives == 0);
     REQUIRE(truePositives == bloomData.size());
     REQUIRE(trueNegatives <= (testData.size() - bloomData.size()));
