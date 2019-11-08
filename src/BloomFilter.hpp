@@ -25,6 +25,15 @@ typedef char BlockType;
 typedef basic_istream<BlockType> BinaryInputStream;
 typedef basic_ostream<BlockType> BinaryOutputStream;
 
+typedef struct BloomSettings_s {
+    size_t maxItems;
+    size_t sizeInBits;
+    size_t bitsPerBlock;
+    size_t numBlocks;
+    size_t hashRounds;
+    size_t numInserted;
+} BloomSettings;
+
 /*
  Bloom filter with djb2 and sdbm hashing. It is a loose C++ port of
  the js library at https://github.com/cry/jsbloom
@@ -32,21 +41,34 @@ typedef basic_ostream<BlockType> BinaryOutputStream;
 class BloomFilter {
 
 public:
-    BloomFilter(size_t maxItems, double targetProbability);
+    BloomFilter(size_t _maxItems, double targetProbability);
 
-    BloomFilter(string importFilePath, size_t maxItems);
+    BloomFilter(string importFilePath, size_t legacy_only_maxItems = 0);
 
-    BloomFilter(BinaryInputStream &in, size_t maxItems);
+    BloomFilter(BinaryInputStream &in, size_t legacy_only_maxItems = 0);
+
+    void init(BinaryInputStream &in, size_t streamSize);
 
     void add(string element);
 
     bool contains(string element);
 
+    void setBitAtIndex(size_t bitIndex);
+
+    bool checkBitAtIndex(size_t bitIndex);
+
     void writeToFile(string exportFilePath);
 
     void writeToStream(BinaryOutputStream &out);
 
-private:
+    void getBloomSettings(BloomSettings &settings);
+
+  private:
+    size_t maxItems;
+    size_t sizeInBits;
+    size_t bitsPerBlock;
+    size_t numBlocks;
     size_t hashRounds;
-    vector<bool> bloomVector;
+    size_t numInserted;
+    vector<BlockType> bloomVector;
 };

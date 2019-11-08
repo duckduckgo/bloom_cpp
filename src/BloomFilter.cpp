@@ -18,7 +18,42 @@
 #include <fstream>
 #include <cmath>
 #include <assert.h>
+#include <sys/stat.h>
 #include "BloomFilter.hpp"
+
+
+#define HDR_MAGIC1 0xBF
+#define HDR_MAGIC2 0xAA
+#define HDR_MAGIC3 0xFE
+#define HDR_MAGIC4 0xED
+
+#define VERSION_MAJOR 1
+#define VERSION_MINOR 0
+
+#define INLINE inline
+
+
+// File Headers
+typedef struct LegacyHeader_s {
+    unsigned char e1;
+    unsigned char e2;
+    unsigned char e3;
+    unsigned char e4;
+} LegacyHeader;
+
+typedef struct FileHeader_s {
+    unsigned char version_major;
+    unsigned char version_minor;
+    unsigned char pad1[6];
+    uint64_t sizeInBits;
+    uint64_t maxItems;
+    uint64_t hashRounds;
+    uint64_t numInserted;
+    unsigned char pad2[24];
+} FileHeader;
+
+static_assert(sizeof(LegacyHeader) == 4, "Check legacy header size");
+static_assert(sizeof(FileHeader) == 64, "Check file header size");
 
 // Forward declarations
 
@@ -30,36 +65,97 @@ static unsigned int sdbmHash(string text);
 
 static unsigned int doubleHash(unsigned int hash1, unsigned int hash2, unsigned int round);
 
-static void writeVectorToStream(vector<bool> &bloomVector, BinaryOutputStream &out);
-
-static BlockType pack(const vector<bool> &filter, size_t block, size_t bits);
-
-static vector<bool> readVectorFromFile(const string &path);
-
-static vector<bool> readVectorFromStream(BinaryInputStream &in);
-
-static void unpackIntoVector(vector<bool> &bloomVector,
-                             size_t offset,
-                             size_t bitsInThisBlock,
-                             BinaryInputStream &in);
+static void readFileHeader(BinaryInputStream &in, FileHeader *fileHdr);
 
 
 // Implementation
 
-BloomFilter::BloomFilter(size_t maxItems, double targetProbability) {
-    auto size = (size_t) ceil((maxItems * log(targetProbability)) / log(1.0 / (pow(2.0, log(2.0)))));
-    bloomVector = vector<bool>(size);
-    hashRounds = calculateHashRounds(size, maxItems);
+BloomFilter::BloomFilter(size_t _maxItems, double targetProbability) : maxItems(_maxItems){
+    sizeInBits = (size_t) ceil((maxItems * log(targetProbability)) / log(1.0 / (pow(2.0, log(2.0)))));
+    bitsPerBlock = sizeof(BlockType) * 8;
+    numBlocks = (sizeInBits + (bitsPerBlock-1)) / bitsPerBlock;
+    bloomVector = vector<BlockType>(numBlocks);
+    hashRounds = calculateHashRounds(sizeInBits, maxItems);
 }
 
-BloomFilter::BloomFilter(string importFilePath, size_t maxItems) {
-    bloomVector = readVectorFromFile(importFilePath);
-    hashRounds = calculateHashRounds(bloomVector.size(), maxItems);
+BloomFilter::BloomFilter(string importFilePath, size_t legacy_only_maxItems) {
+    maxItems = legacy_only_maxItems;
+    struct stat stat_buf;
+    size_t filesize = 0;
+    int rc = stat(importFilePath.c_str(), &stat_buf);
+    if (rc != 0) {
+        filesize = stat_buf.st_size;
+    }
+    basic_ifstream<BlockType> in(importFilePath, ifstream::binary);
+    init(in, filesize);
+    in.close();
 }
 
-BloomFilter::BloomFilter(BinaryInputStream &in, size_t maxItems) {
-    bloomVector = readVectorFromStream(in);
-    hashRounds = calculateHashRounds(bloomVector.size(), maxItems);
+BloomFilter::BloomFilter(BinaryInputStream &in, size_t legacy_only_maxItems) {
+    maxItems = legacy_only_maxItems;
+    init(in, 0);
+}
+
+void BloomFilter::init(BinaryInputStream &in, size_t streamSize) {
+    size_t streamBytesRead;
+
+    // Read in legacy header, check for magic vals indicating new format
+    LegacyHeader legacyHdr;
+    in.read((char *)&legacyHdr, sizeof(legacyHdr));
+    streamBytesRead += sizeof(legacyHdr);
+    if (! (legacyHdr.e1 == HDR_MAGIC1 && legacyHdr.e2 == HDR_MAGIC2 &&
+           legacyHdr.e3 == HDR_MAGIC3 && legacyHdr.e4 == HDR_MAGIC4)) {
+        // File doesn't match new format, assume legacy file format
+        // TODO - log a message
+        // printf("** Legacy bloomfilter file found **\n");
+        const size_t component1 = legacyHdr.e1 << 0;
+        const size_t component2 = legacyHdr.e2 << 8;
+        const size_t component3 = legacyHdr.e3 << 16;
+        const size_t component4 = legacyHdr.e4 << 24;
+        const size_t elementCount = component1 + component2 + component3 + component4;
+        sizeInBits = elementCount;
+        hashRounds = calculateHashRounds(sizeInBits, maxItems);
+    } else {
+        // File matches newer file format
+        FileHeader fileHdr;
+        readFileHeader(in, &fileHdr);
+        streamBytesRead += sizeof(fileHdr);
+        assert(fileHdr.version_major == 1 && fileHdr.version_minor == 0);
+        sizeInBits = fileHdr.sizeInBits;
+        // Unnecessary to pass in maxItems when reloading from the new file format
+        if (maxItems > 0 && fileHdr.maxItems != maxItems) {
+            // TODO log a warning
+            // printf("WARNING: maxItems parameter inconsistent with file header: %lu %llu",
+            //        maxItems, fileHdr.maxItems);
+        }
+        maxItems = fileHdr.maxItems;
+
+        size_t calcHashRounds;
+        calcHashRounds = calculateHashRounds(sizeInBits, maxItems);
+        if (fileHdr.hashRounds != calcHashRounds) {
+            // TODO log a warning
+            // printf("WARNING: hashRounds inconsistent with file header: %lu %lld",
+            //       calcHashRounds, fileHdr.hashRounds);
+        }
+        hashRounds = fileHdr.hashRounds;
+        numInserted = fileHdr.numInserted;
+
+    }
+
+    bitsPerBlock = sizeof(BlockType) * 8;
+    numBlocks = (sizeInBits + (bitsPerBlock-1)) / bitsPerBlock;
+    size_t bytesToRead = numBlocks * sizeof(BlockType);
+    if (streamSize > 0) {
+        // stream size information was provided
+        if (bytesToRead != (streamSize - streamBytesRead)) {
+            // TODO - throw an error?
+            assert(bytesToRead == (streamSize - streamBytesRead));
+        }
+    }
+    // Read in vector data
+    bloomVector = vector<BlockType>(numBlocks);
+    BlockType* blocks = bloomVector.data();
+    in.read((char*)blocks, numBlocks * sizeof(BlockType));
 }
 
 static size_t calculateHashRounds(size_t size, size_t maxItems) {
@@ -72,9 +168,10 @@ void BloomFilter::add(string element) {
 
     for (size_t i = 0; i < hashRounds; i++) {
         unsigned int hash = doubleHash(hash1, hash2, i);
-        size_t index = hash % bloomVector.size();
-        bloomVector[index] = true;
+        size_t bitIndex = hash % sizeInBits;
+        setBitAtIndex(bitIndex);
     }
+    numInserted++;
 }
 
 bool BloomFilter::contains(string element) {
@@ -83,16 +180,83 @@ bool BloomFilter::contains(string element) {
 
     for (size_t i = 0; i < hashRounds; i++) {
         unsigned int hash = doubleHash(hash1, hash2, i);
-        size_t index = hash % bloomVector.size();
-        if (!bloomVector[index]) {
+        size_t bitIndex = hash % sizeInBits;
+        if (checkBitAtIndex(bitIndex) == false) {
             return false;
         }
     }
-
     return true;
 }
 
-static unsigned int djb2Hash(string text) {
+INLINE void BloomFilter::setBitAtIndex(size_t bitIndex) {
+    size_t blockIndex = bitIndex / bitsPerBlock;
+    size_t blockOffset = bitIndex % bitsPerBlock;
+    auto blk = bloomVector[blockIndex];
+    bloomVector[blockIndex] = blk | (1 << blockOffset);
+}
+
+INLINE bool BloomFilter::checkBitAtIndex(size_t bitIndex) {
+    size_t blockIndex = bitIndex / bitsPerBlock;
+    size_t blockOffset = bitIndex % bitsPerBlock;
+    auto blk = bloomVector[blockIndex];
+    if ((blk & (1 << blockOffset)) == 0) {
+        return false;
+    }
+    return true;
+}
+
+void BloomFilter::writeToFile(string path) {
+    basic_ofstream<BlockType> out(path.c_str(), ofstream::binary);
+    writeToStream(out);
+    out.close();
+}
+
+void BloomFilter::writeToStream(BinaryOutputStream &out) {
+    // Write out file headers
+    LegacyHeader legacyHdr;
+    memset(&legacyHdr, 0, sizeof(legacyHdr));
+    legacyHdr.e1 = HDR_MAGIC1;
+    legacyHdr.e2 = HDR_MAGIC2;
+    legacyHdr.e3 = HDR_MAGIC3;
+    legacyHdr.e4 = HDR_MAGIC4;
+    out.write((char *)&legacyHdr, sizeof(legacyHdr));
+
+    FileHeader fileHdr;
+    memset(&fileHdr, 0, sizeof(fileHdr));
+    fileHdr.version_major = VERSION_MAJOR;
+    fileHdr.version_minor = VERSION_MINOR;
+    // store ints in network byte order
+    fileHdr.sizeInBits = htonll(sizeInBits);
+    fileHdr.maxItems = htonll(maxItems);
+    fileHdr.hashRounds = htonll(hashRounds);
+    fileHdr.numInserted = htonll(numInserted);
+    out.write((char *)&fileHdr, sizeof(fileHdr));
+
+    // Write out bloom vector
+    BlockType* blocks = bloomVector.data();
+    out.write((char*)blocks, numBlocks * sizeof(BlockType));
+}
+
+void BloomFilter::getBloomSettings(BloomSettings &settings) {
+    settings.maxItems = maxItems;
+    settings.sizeInBits = sizeInBits;
+    settings.bitsPerBlock = bitsPerBlock;
+    settings.numBlocks = numBlocks;
+    settings.hashRounds = hashRounds;
+    settings.numInserted = numInserted;
+}
+
+static void readFileHeader(BinaryInputStream &in, FileHeader *fileHdr) {
+    in.read((char *)fileHdr, sizeof(*fileHdr));
+    // convert ints from network to host byte order
+    fileHdr->sizeInBits = ntohll(fileHdr->sizeInBits);
+    fileHdr->maxItems = ntohll(fileHdr->maxItems);
+    fileHdr->hashRounds = ntohll(fileHdr->hashRounds);
+    fileHdr->numInserted = ntohll(fileHdr->numInserted);
+    return;
+}
+
+static INLINE unsigned int djb2Hash(string text) {
     unsigned int hash = 5381;
     for (char &iterator : text) {
         hash = ((hash << 5) + hash) + iterator;
@@ -100,7 +264,7 @@ static unsigned int djb2Hash(string text) {
     return hash;
 }
 
-static unsigned int sdbmHash(string text) {
+static INLINE unsigned int sdbmHash(string text) {
     unsigned int hash = 0;
     for (char &iterator : text) {
         hash = iterator + ((hash << 6) + (hash << 16) - hash);
@@ -108,7 +272,7 @@ static unsigned int sdbmHash(string text) {
     return hash;
 }
 
-static unsigned int doubleHash(unsigned int hash1, unsigned int hash2, unsigned int round) {
+static INLINE unsigned int doubleHash(unsigned int hash1, unsigned int hash2, unsigned int round) {
     switch (round) {
         case 0:
             return hash1;
@@ -116,92 +280,5 @@ static unsigned int doubleHash(unsigned int hash1, unsigned int hash2, unsigned 
             return hash2;
         default:
             return (hash1 + (round * hash2) + (round ^ 2));
-    }
-}
-
-void BloomFilter::writeToFile(string path) {
-    basic_ofstream<BlockType> out(path.c_str(), ofstream::binary);
-    writeVectorToStream(bloomVector, out);
-}
-
-void BloomFilter::writeToStream(BinaryOutputStream &out) {
-    writeVectorToStream(bloomVector, out);
-}
-
-static void writeVectorToStream(vector<bool> &bloomVector, BinaryOutputStream &out) {
-
-    const size_t elements = bloomVector.size();
-    out.put(((elements & 0x000000ff) >> 0));
-    out.put(((elements & 0x0000ff00) >> 8));
-    out.put(((elements & 0x00ff0000) >> 16));
-    out.put(((elements & 0xff000000) >> 24));
-
-    const size_t bitsPerBlock = sizeof(BlockType) * 8;
-    for (size_t i = 0; i < elements / bitsPerBlock; i++) {
-        const BlockType buffer = pack(bloomVector, i, bitsPerBlock);
-        out.put(buffer);
-    }
-
-    const size_t bitsInLastBlock = elements % bitsPerBlock;
-    if (bitsInLastBlock > 0) {
-        const size_t lastBlock = elements / bitsPerBlock;
-        const BlockType buffer = pack(bloomVector, lastBlock, bitsInLastBlock);
-        out.put(buffer);
-    }
-}
-
-static BlockType pack(const vector<bool> &filter, size_t block, size_t bits) {
-
-    const size_t sizeOfTInBits = sizeof(BlockType) * 8;
-    assert(bits <= sizeOfTInBits);
-    BlockType buffer = 0;
-    for (size_t j = 0; j < bits; ++j) {
-        const size_t offset = (block * sizeOfTInBits) + j;
-        const BlockType bit = filter[offset] << j;
-        buffer |= bit;
-    }
-    return buffer;
-}
-
-static vector<bool> readVectorFromFile(const string &path) {
-    basic_ifstream<BlockType> inFile(path, ifstream::binary);
-    return readVectorFromStream(inFile);
-}
-
-static vector<bool> readVectorFromStream(BinaryInputStream &in) {
-
-    const size_t component1 = in.get() << 0;
-    const size_t component2 = in.get() << 8;
-    const size_t component3 = in.get() << 16;
-    const size_t component4 = in.get() << 24;
-    const size_t elementCount = component1 + component2 + component3 + component4;
-
-    vector<bool> bloomVector(elementCount);
-    const size_t bitsPerBlock = sizeof(BlockType) * 8;
-    const size_t fullBlocks = elementCount / bitsPerBlock;
-    for (size_t i = 0; i < fullBlocks; ++i) {
-        const size_t offset = i * bitsPerBlock;
-        unpackIntoVector(bloomVector, offset, bitsPerBlock, in);
-    }
-
-    const size_t bitsInLastBlock = elementCount % bitsPerBlock;
-    if (bitsInLastBlock > 0) {
-        const size_t offset = bitsPerBlock * fullBlocks;
-        unpackIntoVector(bloomVector, offset, bitsInLastBlock, in);
-    }
-
-    return bloomVector;
-}
-
-static void unpackIntoVector(vector<bool> &bloomVector,
-                             size_t offset,
-                             size_t bitsInThisBlock,
-                             BinaryInputStream &in) {
-
-    const BlockType block = in.get();
-
-    for (size_t j = 0; j < bitsInThisBlock; j++) {
-        const BlockType mask = 1 << j;
-        bloomVector[offset + j] = (block & mask) != 0;
     }
 }
