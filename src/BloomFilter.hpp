@@ -47,15 +47,9 @@ public:
 
     BloomFilter(BinaryInputStream &in, size_t legacy_only_maxItems = 0);
 
-    void init(BinaryInputStream &in, size_t streamSize);
-
     void add(string element);
 
     bool contains(string element);
-
-    void setBitAtIndex(size_t bitIndex);
-
-    bool checkBitAtIndex(size_t bitIndex);
 
     void writeToFile(string exportFilePath);
 
@@ -64,6 +58,12 @@ public:
     void getBloomSettings(BloomSettings &settings);
 
   private:
+    void init(BinaryInputStream &in, size_t streamSize);
+
+    void setBitAtIndex(size_t bitIndex);
+
+    bool checkBitAtIndex(size_t bitIndex);
+
     size_t maxItems;
     size_t sizeInBits;
     size_t bitsPerBlock;
