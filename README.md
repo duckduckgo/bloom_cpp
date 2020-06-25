@@ -17,7 +17,7 @@ and cmake to run this project.
 ### Utils - GenerateFilter
 A convenience utility that uses the main filter library to generate a binary bloom filter that can then be imported 
  later or used on a different device. This is useful for distributing / sharing populated bloom filters.
- Also generates a false positive list that can be used as a whitelist.
+ Also generates a false positive list that can be used as an allowlist.
 
 Run via the `./make_filter.sh` script with appropriate parameters.
 
@@ -43,6 +43,9 @@ When reporting bugs let us know the:
 * Steps to reproduce the bug
 * Expected behavior
 * Actual behavior
+
+## Terminology
+We have taken steps to update our terminology and remove words with problematic racial connotations, most notably the change to `main` branches, `allow lists`, and `blocklists`. Closed issues or PRs may contain deprecated terminology that should not be used going forward.
 
 ## Discuss
 
