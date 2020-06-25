@@ -29,7 +29,7 @@ using namespace std;
 
 static set<string> readStringsFromFile(const string &fileName);
 
-static void writeWhitelistToFile(const vector<string> &whitelistData, const string &fileName);
+static void writeAllowlistToFile(const vector<string> &allowlistData, const string &fileName);
 
 static string generateSha256(const string &fileName);
 
@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
     string validationDataFile = argv[2];
     string bloomOutputFile = string(argv[3]) + "-bloom.bin";
     string bloomSpecOutputFile = string(argv[3]) + "-bloom-spec.json";
-    string whitelistOutputFile = string(argv[3]) + "-whitelist.json";
+    string allowlistOutputFile = string(argv[3]) + "-allowlist.json";
     double errorRate = 0.000001;
 
     cout << "Generating filter" << endl;
@@ -70,27 +70,27 @@ int main(int argc, char *argv[]) {
     cout << "Reading generated filter for validation" << endl;
     filter = BloomFilter(bloomOutputFile, bloomInput.size());
 
-    cout << "Validating data and generating whitelist" << endl;
+    cout << "Validating data and generating allowlist" << endl;
     set<string> validationData = readStringsFromFile(validationDataFile);
     if (validationData.empty()) {
         cerr << "Error there was no data in " << validationDataFile << endl;
         return 1;
     }
 
-    vector<string> whitelistData;
+    vector<string> allowlistData;
     for (const string &entry : validationData) {
         bool isInFilter = bloomInput.find(entry) != bloomInput.end();
         if (filter.contains(entry) && !isInFilter) {
-            whitelistData.push_back(entry);
+            allowlistData.push_back(entry);
         }
         if (!filter.contains(entry) && isInFilter) {
             cerr << "Error false negative on" << entry << "this should not occur" << endl;
             return 1;
         }
     }
-    writeWhitelistToFile(whitelistData, whitelistOutputFile);
+    writeAllowlistToFile(allowlistData, allowlistOutputFile);
 
-    double actualErrorRate = whitelistData.size() / (double) validationData.size();
+    double actualErrorRate = allowlistData.size() / (double) validationData.size();
     cout << "Actual error rate was " << actualErrorRate << endl;
 
     cout << "Generating filter specification" << endl;
@@ -117,13 +117,13 @@ static set<string> readStringsFromFile(const string &fileName) {
     return data;
 }
 
-static void writeWhitelistToFile(const vector<string> &whitelistData, const string &fileName) {
+static void writeAllowlistToFile(const vector<string> &allowlistData, const string &fileName) {
     ofstream file(fileName);
     file << "{ \"data\": [" << endl;
 
-    for (size_t i = 0; i < whitelistData.size(); i++) {
-        file << "\"" << whitelistData[i] << "\"";
-        if (i < whitelistData.size() - 1) {
+    for (size_t i = 0; i < allowlistData.size(); i++) {
+        file << "\"" << allowlistData[i] << "\"";
+        if (i < allowlistData.size() - 1) {
             file << ",";
         }
         file << endl;
