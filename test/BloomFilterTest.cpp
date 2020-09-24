@@ -18,9 +18,7 @@
 #include <uuid/uuid.h>
 #include "BloomFilter.hpp"
 
-#define CATCH_CONFIG_MAIN
-
-#include "catch.hpp"
+#include "Test.hpp"
 
 
 using namespace std;
