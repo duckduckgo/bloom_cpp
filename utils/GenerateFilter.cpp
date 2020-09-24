@@ -33,7 +33,7 @@ static void writeFalsePositivesToFile(const vector<string> &falsePositives, cons
 
 static string generateSha256(const string &fileName);
 
-static string generateSpecification(size_t entries, double errorRate, const string &sha256);
+static string generateSpecification(size_t entries, size_t bitCount, double errorRate, const string &sha256);
 
 static void replace(string &string, const std::string &fromString, const std::string &toString);
 
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
     filter.writeToFile(bloomOutputFile);
 
     cout << "Reading generated filter for validation" << endl;
-    filter = BloomFilter(bloomOutputFile, bloomInput.size());
+    filter = BloomFilter(bloomOutputFile, filter.getBitCount(), bloomInput.size());
 
     cout << "Validating data and generating false positives list" << endl;
     set<string> validationData = readStringsFromFile(validationDataFile);
@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
 
     cout << "Generating filter specification" << endl;
     string sha256 = generateSha256(bloomOutputFile);
-    string spec = generateSpecification(bloomInput.size(), errorRate, sha256);
+    string spec = generateSpecification(bloomInput.size(), filter.getBitCount(), errorRate, sha256);
     ofstream specOutput(bloomSpecOutputFile);
     specOutput << spec;
 
@@ -151,15 +151,17 @@ static string generateSha256(const string &fileName) {
     return ss.str();
 }
 
-static string generateSpecification(size_t entries, double errorRate, const string &sha256) {
+static string generateSpecification(size_t entries, size_t bitCount, double errorRate, const string &sha256) {
 
     string specification = R"({
         "totalEntries" : ENTRIES,
+        "bitCount:"    : BITS,
         "errorRate"    : ERROR,
         "sha256"       : "SHA256"
     })";
 
     replace(specification, "ENTRIES", to_string(entries));
+    replace(specification, "BITS", to_string(bitCount));
     replace(specification, "ERROR", to_string(errorRate));
     replace(specification, "SHA256", sha256);
 

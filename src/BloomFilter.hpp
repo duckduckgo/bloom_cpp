@@ -34,9 +34,9 @@ class BloomFilter {
 public:
     BloomFilter(size_t maxItems, double targetProbability);
 
-    BloomFilter(string importFilePath, size_t maxItems);
+    BloomFilter(string importFilePath, size_t bits, size_t maxItems);
 
-    BloomFilter(BinaryInputStream &in, size_t maxItems);
+    BloomFilter(BinaryInputStream &in, size_t bits, size_t maxItems);
 
     void add(string element);
 
@@ -46,7 +46,10 @@ public:
 
     void writeToStream(BinaryOutputStream &out);
 
+    size_t getBitCount();
+
 private:
+    size_t bits;
+    vector<BlockType> bloomVector;
     size_t hashRounds;
-    vector<bool> bloomVector;
 };

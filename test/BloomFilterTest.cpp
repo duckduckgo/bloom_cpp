@@ -22,13 +22,14 @@
 
 #include "catch.hpp"
 
-
 using namespace std;
 
 static const unsigned int FILTER_ELEMENT_COUNT = 5000;
+static const unsigned int FILTER_ELEMENT_COUNT_NOT_DIVISIBLE_BY_8_BITS = 5111;
 static const unsigned int ADDITIONAL_TEST_DATA_ELEMENT_COUNT = 5000;
 static const double TARGET_ERROR_RATE = 0.001;
 static const double ACCEPTABLE_ERROR_RATE = TARGET_ERROR_RATE * 2;
+static const string FILE_PATH = "test-bloom-filter.bin";
 
 static string createRandomString() {
     uuid_t id;
@@ -90,4 +91,40 @@ TEST_CASE("when BloomFilter contains items then error is within range") {
     REQUIRE(truePositives == bloomData.size());
     REQUIRE(trueNegatives <= (testData.size() - bloomData.size()));
     REQUIRE(errorRate <= ACCEPTABLE_ERROR_RATE);
+}
+
+TEST_CASE("when BloomFilter is saved and reloaded then results are identical") {
+
+    BloomFilter original(FILTER_ELEMENT_COUNT, TARGET_ERROR_RATE);
+    set<string> bloomData = createRandomStrings(FILTER_ELEMENT_COUNT);
+    set<string> testData = createRandomStrings(ADDITIONAL_TEST_DATA_ELEMENT_COUNT);
+    testData.insert(bloomData.begin(), bloomData.end());
+
+    for (const auto &i : bloomData) {
+        original.add(i);
+    }
+    original.writeToFile(FILE_PATH);
+
+    BloomFilter duplicate = BloomFilter(FILE_PATH, original.getBitCount(), FILTER_ELEMENT_COUNT);
+    for (const auto &element : bloomData) {
+        REQUIRE(original.contains(element) == duplicate.contains(element)) ;
+    }
+}
+
+TEST_CASE("when BloomFilter not divisible by 8 bits is saved and reloaded then results are identical") {
+
+    BloomFilter original(FILTER_ELEMENT_COUNT_NOT_DIVISIBLE_BY_8_BITS, TARGET_ERROR_RATE);
+    set<string> bloomData = createRandomStrings(FILTER_ELEMENT_COUNT);
+    set<string> testData = createRandomStrings(ADDITIONAL_TEST_DATA_ELEMENT_COUNT);
+    testData.insert(bloomData.begin(), bloomData.end());
+
+    for (const auto &i : bloomData) {
+        original.add(i);
+    }
+    original.writeToFile(FILE_PATH);
+
+    BloomFilter duplicate = BloomFilter(FILE_PATH, original.getBitCount(), FILTER_ELEMENT_COUNT);
+    for (const auto &element : bloomData) {
+        REQUIRE(original.contains(element) == duplicate.contains(element)) ;
+    }
 }
