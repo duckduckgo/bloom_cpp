@@ -23,6 +23,8 @@ static const size_t BITS_PER_BLOCK = 8;
 
 // Forward declarations
 
+static void checkArchitecture();
+
 static size_t calculateHashRounds(size_t size, size_t maxItems);
 
 static unsigned int djb2Hash(string text);
@@ -39,6 +41,7 @@ static vector<BlockType> readVectorFromStream(BinaryInputStream &in);
 // Implementation
 
 BloomFilter::BloomFilter(size_t maxItems, double targetProbability) {
+    checkArchitecture();
     bits = (size_t) ceil((maxItems * log(targetProbability)) / log(1.0 / (pow(2.0, log(2.0)))));
     auto blocks = (size_t) ceil(bits / (double) BITS_PER_BLOCK);
     bloomVector = vector<BlockType>(blocks);
@@ -46,15 +49,23 @@ BloomFilter::BloomFilter(size_t maxItems, double targetProbability) {
 }
 
 BloomFilter::BloomFilter(string importFilePath, size_t bits,size_t maxItems) {
+    checkArchitecture();
     this->bits = bits;
     bloomVector = readVectorFromFile(importFilePath);
     hashRounds = calculateHashRounds(bits, maxItems);
 }
 
 BloomFilter::BloomFilter(BinaryInputStream &in, size_t bits, size_t maxItems) {
+    checkArchitecture();
     this->bits = bits;
     bloomVector = readVectorFromStream(in);
     hashRounds = calculateHashRounds(bits, maxItems);
+}
+
+static void checkArchitecture() {
+    if (CHAR_BIT != BITS_PER_BLOCK) {
+        throw "Unsupported architecture: char is not 8 bits";
+    }
 }
 
 static size_t calculateHashRounds(size_t size, size_t maxItems) {
