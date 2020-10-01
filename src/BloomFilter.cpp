@@ -16,7 +16,6 @@
 
 #include <cstdio>
 #include <fstream>
-#include <assert.h>
 #include "BloomFilter.hpp"
 
 static const size_t BITS_PER_BLOCK = 8;
@@ -27,9 +26,9 @@ static void checkArchitecture();
 
 static size_t calculateHashRounds(size_t size, size_t maxItems);
 
-static unsigned int djb2Hash(string text);
+static unsigned int djb2Hash(const string &text);
 
-static unsigned int sdbmHash(string text);
+static unsigned int sdbmHash(const string &text);
 
 static unsigned int doubleHash(unsigned int hash1, unsigned int hash2, unsigned int round);
 
@@ -48,7 +47,7 @@ BloomFilter::BloomFilter(size_t maxItems, double targetProbability) {
     hashRounds = calculateHashRounds(bits, maxItems);
 }
 
-BloomFilter::BloomFilter(string importFilePath, size_t bits,size_t maxItems) {
+BloomFilter::BloomFilter(const string &importFilePath, size_t bits, size_t maxItems) {
     checkArchitecture();
     this->bits = bits;
     bloomVector = readVectorFromFile(importFilePath);
@@ -64,7 +63,7 @@ BloomFilter::BloomFilter(BinaryInputStream &in, size_t bits, size_t maxItems) {
 
 static void checkArchitecture() {
     if (CHAR_BIT != BITS_PER_BLOCK) {
-        throw "Unsupported architecture: char is not 8 bits";
+        throw std::runtime_error("Unsupported architecture: char is not 8 bits");
     }
 }
 
@@ -72,7 +71,7 @@ static size_t calculateHashRounds(size_t size, size_t maxItems) {
     return (size_t) round(log(2.0) * size / maxItems);
 }
 
-void BloomFilter::add(string element) {
+void BloomFilter::add(const string &element) {
     unsigned int hash1 = djb2Hash(element);
     unsigned int hash2 = sdbmHash(element);
 
@@ -86,7 +85,7 @@ void BloomFilter::add(string element) {
     }
 }
 
-bool BloomFilter::contains(string element) {
+bool BloomFilter::contains(const string &element) {
     unsigned int hash1 = djb2Hash(element);
     unsigned int hash2 = sdbmHash(element);
 
@@ -104,17 +103,17 @@ bool BloomFilter::contains(string element) {
     return true;
 }
 
-static unsigned int djb2Hash(string text) {
+static unsigned int djb2Hash(const string &text) {
     unsigned int hash = 5381;
-    for (char &iterator : text) {
+    for (const char &iterator : text) {
         hash = ((hash << 5) + hash) + iterator;
     }
     return hash;
 }
 
-static unsigned int sdbmHash(string text) {
+static unsigned int sdbmHash(const string &text) {
     unsigned int hash = 0;
-    for (char &iterator : text) {
+    for (const char &iterator : text) {
         hash = iterator + ((hash << 6) + (hash << 16) - hash);
     }
     return hash;
@@ -131,7 +130,7 @@ static unsigned int doubleHash(unsigned int hash1, unsigned int hash2, unsigned 
     }
 }
 
-void BloomFilter::writeToFile(string path) {
+void BloomFilter::writeToFile(const string &path) {
     basic_ofstream<BlockType> out(path.c_str(), ofstream::binary);
     writeToStream(out);
 }
@@ -150,6 +149,6 @@ static vector<BlockType> readVectorFromStream(BinaryInputStream &in) {
     return bloomVector;
 }
 
-size_t BloomFilter::getBitCount() {
+size_t BloomFilter::getBitCount() const {
     return bits;
 }

@@ -107,7 +107,7 @@ TEST_CASE("when BloomFilter is saved and reloaded then results are identical") {
 
     BloomFilter duplicate = BloomFilter(FILE_PATH, original.getBitCount(), FILTER_ELEMENT_COUNT);
     for (const auto &element : bloomData) {
-        REQUIRE(original.contains(element) == duplicate.contains(element)) ;
+        REQUIRE(original.contains(element) == duplicate.contains(element));
     }
 }
 
@@ -125,6 +125,6 @@ TEST_CASE("when BloomFilter not divisible by 8 bits is saved and reloaded then r
 
     BloomFilter duplicate = BloomFilter(FILE_PATH, original.getBitCount(), FILTER_ELEMENT_COUNT);
     for (const auto &element : bloomData) {
-        REQUIRE(original.contains(element) == duplicate.contains(element)) ;
+        REQUIRE(original.contains(element) == duplicate.contains(element));
     }
 }

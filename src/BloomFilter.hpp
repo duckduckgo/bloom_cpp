@@ -34,19 +34,19 @@ class BloomFilter {
 public:
     BloomFilter(size_t maxItems, double targetProbability);
 
-    BloomFilter(string importFilePath, size_t bits, size_t maxItems);
+    BloomFilter(const string &importFilePath, size_t bits, size_t maxItems);
 
     BloomFilter(BinaryInputStream &in, size_t bits, size_t maxItems);
 
-    void add(string element);
+    void add(const string &element);
 
-    bool contains(string element);
+    bool contains(const string &element);
 
-    void writeToFile(string exportFilePath);
+    void writeToFile(const string &exportFilePath);
 
     void writeToStream(BinaryOutputStream &out);
 
-    size_t getBitCount();
+    size_t getBitCount() const;
 
 private:
     size_t bits;
