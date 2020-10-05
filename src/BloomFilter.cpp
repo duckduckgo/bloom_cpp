@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <climits>
+#include <cmath>
 #include <cstdio>
 #include <fstream>
 #include "BloomFilter.hpp"
