@@ -10,14 +10,14 @@ The main bloom filter library source is cross-platform and has been used on:
 - linux >= Ubuntu 16.04.3 LTS
 - macOS >= 10.12
 
-The utils and unit tests have been run only on linux and macOS. We recommend installing g++
-and cmake to run this project.
-
+The library is written in C++ 14. Utils and unit tests have been run only on linux and macOS.
+We recommend installing g++ and cmake to run this project. Underlying architecture is expected
+to use 8-bit chars.
 
 ### Utils - GenerateFilter
 A convenience utility that uses the main filter library to generate a binary bloom filter that can then be imported 
  later or used on a different device. This is useful for distributing / sharing populated bloom filters.
- Also generates a false positive list that can be used as an allowlist.
+ Also generates a false positive list that can be used as supplementary data to ensure final result is always correct.
 
 Run via the `./make_filter.sh` script with appropriate parameters.
 
