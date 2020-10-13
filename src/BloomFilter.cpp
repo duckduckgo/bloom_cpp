@@ -49,16 +49,14 @@ BloomFilter::BloomFilter(size_t maxItems, double targetProbability) {
     hashRounds = calculateHashRounds(bitCount, maxItems);
 }
 
-BloomFilter::BloomFilter(const string &importFilePath, size_t bitCount, size_t maxItems) {
+BloomFilter::BloomFilter(const string &importFilePath, size_t bitCount, size_t maxItems) : bitCount(bitCount) {
     checkArchitecture();
-    this->bitCount = bitCount;
     bloomVector = readVectorFromFile(importFilePath);
     hashRounds = calculateHashRounds(bitCount, maxItems);
 }
 
-BloomFilter::BloomFilter(BinaryInputStream &in, size_t bitCount, size_t maxItems) {
+BloomFilter::BloomFilter(BinaryInputStream &in, size_t bitCount, size_t maxItems) : bitCount(bitCount) {
     checkArchitecture();
-    this->bitCount = bitCount;
     bloomVector = readVectorFromStream(in);
     hashRounds = calculateHashRounds(bitCount, maxItems);
 }
