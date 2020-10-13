@@ -34,9 +34,9 @@ class BloomFilter {
 public:
     BloomFilter(size_t maxItems, double targetProbability);
 
-    BloomFilter(const string &importFilePath, size_t bits, size_t maxItems);
+    BloomFilter(const string &importFilePath, size_t bitCount, size_t maxItems);
 
-    BloomFilter(BinaryInputStream &in, size_t bits, size_t maxItems);
+    BloomFilter(BinaryInputStream &in, size_t bitCount, size_t maxItems);
 
     void add(const string &element);
 
@@ -49,7 +49,7 @@ public:
     size_t getBitCount() const;
 
 private:
-    size_t bits;
+    size_t bitCount;
     vector<BlockType> bloomVector;
     size_t hashRounds;
 };

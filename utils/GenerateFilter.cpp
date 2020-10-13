@@ -155,13 +155,13 @@ static string generateSpecification(size_t entries, size_t bitCount, double erro
 
     string specification = R"({
         "totalEntries" : ENTRIES,
-        "bitCount"     : BITS,
+        "bitCount"     : BIT_COUNT,
         "errorRate"    : ERROR,
         "sha256"       : "SHA256"
     })";
 
     replace(specification, "ENTRIES", to_string(entries));
-    replace(specification, "BITS", to_string(bitCount));
+    replace(specification, "BIT_COUNT", to_string(bitCount));
     replace(specification, "ERROR", to_string(errorRate));
     replace(specification, "SHA256", sha256);
 

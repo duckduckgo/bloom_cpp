@@ -43,29 +43,29 @@ static vector<BlockType> readVectorFromStream(BinaryInputStream &in);
 
 BloomFilter::BloomFilter(size_t maxItems, double targetProbability) {
     checkArchitecture();
-    bits = (size_t) ceil((maxItems * log(targetProbability)) / log(1.0 / (pow(2.0, log(2.0)))));
-    auto blocks = (size_t) ceil(bits / (double) BITS_PER_BLOCK);
+    bitCount = (size_t) ceil((maxItems * log(targetProbability)) / log(1.0 / (pow(2.0, log(2.0)))));
+    auto blocks = (size_t) ceil(bitCount / (double) BITS_PER_BLOCK);
     bloomVector = vector<BlockType>(blocks);
-    hashRounds = calculateHashRounds(bits, maxItems);
+    hashRounds = calculateHashRounds(bitCount, maxItems);
 }
 
-BloomFilter::BloomFilter(const string &importFilePath, size_t bits, size_t maxItems) {
+BloomFilter::BloomFilter(const string &importFilePath, size_t bitCount, size_t maxItems) {
     checkArchitecture();
-    this->bits = bits;
+    this->bitCount = bitCount;
     bloomVector = readVectorFromFile(importFilePath);
-    hashRounds = calculateHashRounds(bits, maxItems);
+    hashRounds = calculateHashRounds(bitCount, maxItems);
 }
 
-BloomFilter::BloomFilter(BinaryInputStream &in, size_t bits, size_t maxItems) {
+BloomFilter::BloomFilter(BinaryInputStream &in, size_t bitCount, size_t maxItems) {
     checkArchitecture();
-    this->bits = bits;
+    this->bitCount = bitCount;
     bloomVector = readVectorFromStream(in);
-    hashRounds = calculateHashRounds(bits, maxItems);
+    hashRounds = calculateHashRounds(bitCount, maxItems);
 }
 
 static void checkArchitecture() {
     if (CHAR_BIT != BITS_PER_BLOCK) {
-        throw std::runtime_error("Unsupported architecture: char is not 8 bits");
+        throw std::runtime_error("Unsupported architecture: char is not 8 bitCount");
     }
 }
 
@@ -79,7 +79,7 @@ void BloomFilter::add(const string &element) {
 
     for (size_t i = 0; i < hashRounds; i++) {
         unsigned int hash = doubleHash(hash1, hash2, i);
-        size_t bitIndex = hash % bits;
+        size_t bitIndex = hash % bitCount;
         size_t blockIndex = bitIndex / BITS_PER_BLOCK;
         size_t blockOffset = bitIndex % BITS_PER_BLOCK;
         auto block = bloomVector[blockIndex];
@@ -93,7 +93,7 @@ bool BloomFilter::contains(const string &element) {
 
     for (size_t i = 0; i < hashRounds; i++) {
         unsigned int hash = doubleHash(hash1, hash2, i);
-        size_t bitIndex = hash % bits;
+        size_t bitIndex = hash % bitCount;
         size_t blockIndex = bitIndex / BITS_PER_BLOCK;
         size_t blockOffset = bitIndex % BITS_PER_BLOCK;
         auto block = bloomVector[blockIndex];
@@ -152,5 +152,5 @@ static vector<BlockType> readVectorFromStream(BinaryInputStream &in) {
 }
 
 size_t BloomFilter::getBitCount() const {
-    return bits;
+    return bitCount;
 }
