@@ -63,7 +63,7 @@ BloomFilter::BloomFilter(BinaryInputStream &in, size_t bitCount, size_t maxItems
 
 static void checkArchitecture() {
     if (CHAR_BIT != BITS_PER_BLOCK) {
-        throw std::runtime_error("Unsupported architecture: char is not 8 bitCount");
+        throw std::runtime_error("Unsupported architecture: char is not 8 bit");
     }
 }
 
