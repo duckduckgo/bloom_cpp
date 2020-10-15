@@ -29,18 +29,18 @@ using namespace std;
 
 static set<string> readStringsFromFile(const string &fileName);
 
-static void writeWhitelistToFile(const vector<string> &whitelistData, const string &fileName);
+static void writeFalsePositivesToFile(const vector<string> &falsePositives, const string &fileName);
 
 static string generateSha256(const string &fileName);
 
-static string generateSpecification(size_t entries, double errorRate, const string &sha256);
+static string generateSpecification(size_t entries, size_t bitCount, double errorRate, const string &sha256);
 
 static void replace(string &string, const std::string &fromString, const std::string &toString);
 
 
 // Bloom generation script
 
-int main(int argc, char *argv[], char *envp[]) {
+int main(int argc, char *argv[]) {
 
     if (argc != 4) {
         cerr << "Usage: INPUT_FILE VALIDATION_FILE OUTPUT_FILES_PREFIX" << endl;
@@ -51,7 +51,7 @@ int main(int argc, char *argv[], char *envp[]) {
     string validationDataFile = argv[2];
     string bloomOutputFile = string(argv[3]) + "-bloom.bin";
     string bloomSpecOutputFile = string(argv[3]) + "-bloom-spec.json";
-    string whitelistOutputFile = string(argv[3]) + "-whitelist.json";
+    string falsePositivesOutputFile = string(argv[3]) + "-false-positives.json";
     double errorRate = 0.000001;
 
     cout << "Generating filter" << endl;
@@ -68,34 +68,34 @@ int main(int argc, char *argv[], char *envp[]) {
     filter.writeToFile(bloomOutputFile);
 
     cout << "Reading generated filter for validation" << endl;
-    filter = BloomFilter(bloomOutputFile, bloomInput.size());
+    filter = BloomFilter(bloomOutputFile, filter.getBitCount(), bloomInput.size());
 
-    cout << "Validating data and generating whitelist" << endl;
+    cout << "Validating data and generating false positives list" << endl;
     set<string> validationData = readStringsFromFile(validationDataFile);
     if (validationData.empty()) {
         cerr << "Error there was no data in " << validationDataFile << endl;
         return 1;
     }
 
-    vector<string> whitelistData;
+    vector<string> falsePositives;
     for (const string &entry : validationData) {
         bool isInFilter = bloomInput.find(entry) != bloomInput.end();
         if (filter.contains(entry) && !isInFilter) {
-            whitelistData.push_back(entry);
+            falsePositives.push_back(entry);
         }
         if (!filter.contains(entry) && isInFilter) {
             cerr << "Error false negative on" << entry << "this should not occur" << endl;
             return 1;
         }
     }
-    writeWhitelistToFile(whitelistData, whitelistOutputFile);
+    writeFalsePositivesToFile(falsePositives, falsePositivesOutputFile);
 
-    double actualErrorRate = whitelistData.size() / (double) validationData.size();
+    double actualErrorRate = falsePositives.size() / (double) validationData.size();
     cout << "Actual error rate was " << actualErrorRate << endl;
 
     cout << "Generating filter specification" << endl;
     string sha256 = generateSha256(bloomOutputFile);
-    string spec = generateSpecification(bloomInput.size(), errorRate, sha256);
+    string spec = generateSpecification(bloomInput.size(), filter.getBitCount(), errorRate, sha256);
     ofstream specOutput(bloomSpecOutputFile);
     specOutput << spec;
 
@@ -117,13 +117,13 @@ static set<string> readStringsFromFile(const string &fileName) {
     return data;
 }
 
-static void writeWhitelistToFile(const vector<string> &whitelistData, const string &fileName) {
+static void writeFalsePositivesToFile(const vector<string> &falsePositives, const string &fileName) {
     ofstream file(fileName);
     file << "{ \"data\": [" << endl;
 
-    for (int i = 0; i < whitelistData.size(); i++) {
-        file << "\"" << whitelistData[i] << "\"";
-        if (i < whitelistData.size() - 1) {
+    for (size_t i = 0; i < falsePositives.size(); i++) {
+        file << "\"" << falsePositives[i] << "\"";
+        if (i < falsePositives.size() - 1) {
             file << ",";
         }
         file << endl;
@@ -151,15 +151,17 @@ static string generateSha256(const string &fileName) {
     return ss.str();
 }
 
-static string generateSpecification(size_t entries, double errorRate, const string &sha256) {
+static string generateSpecification(size_t entries, size_t bitCount, double errorRate, const string &sha256) {
 
     string specification = R"({
         "totalEntries" : ENTRIES,
+        "bitCount"     : BIT_COUNT,
         "errorRate"    : ERROR,
         "sha256"       : "SHA256"
     })";
 
     replace(specification, "ENTRIES", to_string(entries));
+    replace(specification, "BIT_COUNT", to_string(bitCount));
     replace(specification, "ERROR", to_string(errorRate));
     replace(specification, "SHA256", sha256);
 

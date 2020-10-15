@@ -14,95 +14,106 @@
  * limitations under the License.
  */
 
+#include <climits>
+#include <cmath>
 #include <cstdio>
 #include <fstream>
-#include <cmath>
-#include <assert.h>
 #include "BloomFilter.hpp"
+
+static const size_t BITS_PER_BLOCK = 8;
 
 // Forward declarations
 
+static void checkArchitecture();
+
 static size_t calculateHashRounds(size_t size, size_t maxItems);
 
-static unsigned int djb2Hash(string text);
+static unsigned int djb2Hash(const string &text);
 
-static unsigned int sdbmHash(string text);
+static unsigned int sdbmHash(const string &text);
 
 static unsigned int doubleHash(unsigned int hash1, unsigned int hash2, unsigned int round);
 
-static void writeVectorToStream(vector<bool> &bloomVector, BinaryOutputStream &out);
+static vector<BlockType> readVectorFromFile(const string &path);
 
-static BlockType pack(const vector<bool> &filter, size_t block, size_t bits);
-
-static vector<bool> readVectorFromFile(const string &path);
-
-static vector<bool> readVectorFromStream(BinaryInputStream &in);
-
-static void unpackIntoVector(vector<bool> &bloomVector,
-                             size_t offset,
-                             size_t bitsInThisBlock,
-                             BinaryInputStream &in);
+static vector<BlockType> readVectorFromStream(BinaryInputStream &in);
 
 
 // Implementation
 
 BloomFilter::BloomFilter(size_t maxItems, double targetProbability) {
-    auto size = (size_t) ceil((maxItems * log(targetProbability)) / log(1.0 / (pow(2.0, log(2.0)))));
-    bloomVector = vector<bool>(size);
-    hashRounds = calculateHashRounds(size, maxItems);
+    checkArchitecture();
+    bitCount = (size_t) ceil((maxItems * log(targetProbability)) / log(1.0 / (pow(2.0, log(2.0)))));
+    auto blocks = (size_t) ceil(bitCount / (double) BITS_PER_BLOCK);
+    bloomVector = vector<BlockType>(blocks);
+    hashRounds = calculateHashRounds(bitCount, maxItems);
 }
 
-BloomFilter::BloomFilter(string importFilePath, size_t maxItems) {
+BloomFilter::BloomFilter(const string &importFilePath, size_t bitCount, size_t maxItems) : bitCount(bitCount) {
+    checkArchitecture();
     bloomVector = readVectorFromFile(importFilePath);
-    hashRounds = calculateHashRounds(bloomVector.size(), maxItems);
+    hashRounds = calculateHashRounds(bitCount, maxItems);
 }
 
-BloomFilter::BloomFilter(BinaryInputStream &in, size_t maxItems) {
+BloomFilter::BloomFilter(BinaryInputStream &in, size_t bitCount, size_t maxItems) : bitCount(bitCount) {
+    checkArchitecture();
     bloomVector = readVectorFromStream(in);
-    hashRounds = calculateHashRounds(bloomVector.size(), maxItems);
+    hashRounds = calculateHashRounds(bitCount, maxItems);
+}
+
+static void checkArchitecture() {
+    if (CHAR_BIT != BITS_PER_BLOCK) {
+        throw std::runtime_error("Unsupported architecture: char is not 8 bit");
+    }
 }
 
 static size_t calculateHashRounds(size_t size, size_t maxItems) {
     return (size_t) round(log(2.0) * size / maxItems);
 }
 
-void BloomFilter::add(string element) {
+void BloomFilter::add(const string &element) {
     unsigned int hash1 = djb2Hash(element);
     unsigned int hash2 = sdbmHash(element);
 
-    for (int i = 0; i < hashRounds; i++) {
+    for (size_t i = 0; i < hashRounds; i++) {
         unsigned int hash = doubleHash(hash1, hash2, i);
-        size_t index = hash % bloomVector.size();
-        bloomVector[index] = true;
+        size_t bitIndex = hash % bitCount;
+        size_t blockIndex = bitIndex / BITS_PER_BLOCK;
+        size_t blockOffset = bitIndex % BITS_PER_BLOCK;
+        auto block = bloomVector[blockIndex];
+        bloomVector[blockIndex] = block | (1 << blockOffset);
     }
 }
 
-bool BloomFilter::contains(string element) {
+bool BloomFilter::contains(const string &element) {
     unsigned int hash1 = djb2Hash(element);
     unsigned int hash2 = sdbmHash(element);
 
-    for (int i = 0; i < hashRounds; i++) {
+    for (size_t i = 0; i < hashRounds; i++) {
         unsigned int hash = doubleHash(hash1, hash2, i);
-        size_t index = hash % bloomVector.size();
-        if (!bloomVector[index]) {
+        size_t bitIndex = hash % bitCount;
+        size_t blockIndex = bitIndex / BITS_PER_BLOCK;
+        size_t blockOffset = bitIndex % BITS_PER_BLOCK;
+        auto block = bloomVector[blockIndex];
+
+        if ((block & (1 << blockOffset)) == 0) {
             return false;
         }
     }
-
     return true;
 }
 
-static unsigned int djb2Hash(string text) {
+static unsigned int djb2Hash(const string &text) {
     unsigned int hash = 5381;
-    for (char &iterator : text) {
+    for (const char &iterator : text) {
         hash = ((hash << 5) + hash) + iterator;
     }
     return hash;
 }
 
-static unsigned int sdbmHash(string text) {
+static unsigned int sdbmHash(const string &text) {
     unsigned int hash = 0;
-    for (char &iterator : text) {
+    for (const char &iterator : text) {
         hash = iterator + ((hash << 6) + (hash << 16) - hash);
     }
     return hash;
@@ -119,89 +130,25 @@ static unsigned int doubleHash(unsigned int hash1, unsigned int hash2, unsigned 
     }
 }
 
-void BloomFilter::writeToFile(string path) {
+void BloomFilter::writeToFile(const string &path) {
     basic_ofstream<BlockType> out(path.c_str(), ofstream::binary);
-    writeVectorToStream(bloomVector, out);
+    writeToStream(out);
 }
 
 void BloomFilter::writeToStream(BinaryOutputStream &out) {
-    writeVectorToStream(bloomVector, out);
+    out.write(&bloomVector[0], bloomVector.size() * sizeof(BlockType));
 }
 
-static void writeVectorToStream(vector<bool> &bloomVector, BinaryOutputStream &out) {
-
-    const size_t elements = bloomVector.size();
-    out.put(((elements & 0x000000ff) >> 0));
-    out.put(((elements & 0x0000ff00) >> 8));
-    out.put(((elements & 0x00ff0000) >> 16));
-    out.put(((elements & 0xff000000) >> 24));
-
-    const size_t bitsPerBlock = sizeof(BlockType) * 8;
-    for (size_t i = 0; i < elements / bitsPerBlock; i++) {
-        const BlockType buffer = pack(bloomVector, i, bitsPerBlock);
-        out.put(buffer);
-    }
-
-    const size_t bitsInLastBlock = elements % bitsPerBlock;
-    if (bitsInLastBlock > 0) {
-        const size_t lastBlock = elements / bitsPerBlock;
-        const BlockType buffer = pack(bloomVector, lastBlock, bitsInLastBlock);
-        out.put(buffer);
-    }
-}
-
-static BlockType pack(const vector<bool> &filter, size_t block, size_t bits) {
-
-    const size_t sizeOfTInBits = sizeof(BlockType) * 8;
-    assert(bits <= sizeOfTInBits);
-    BlockType buffer = 0;
-    for (int j = 0; j < bits; ++j) {
-        const size_t offset = (block * sizeOfTInBits) + j;
-        const BlockType bit = filter[offset] << j;
-        buffer |= bit;
-    }
-    return buffer;
-}
-
-static vector<bool> readVectorFromFile(const string &path) {
+static vector<BlockType> readVectorFromFile(const string &path) {
     basic_ifstream<BlockType> inFile(path, ifstream::binary);
     return readVectorFromStream(inFile);
 }
 
-static vector<bool> readVectorFromStream(BinaryInputStream &in) {
-
-    const size_t component1 = in.get() << 0;
-    const size_t component2 = in.get() << 8;
-    const size_t component3 = in.get() << 16;
-    const size_t component4 = in.get() << 24;
-    const size_t elementCount = component1 + component2 + component3 + component4;
-
-    vector<bool> bloomVector(elementCount);
-    const size_t bitsPerBlock = sizeof(BlockType) * 8;
-    const size_t fullBlocks = elementCount / bitsPerBlock;
-    for (int i = 0; i < fullBlocks; ++i) {
-        const size_t offset = i * bitsPerBlock;
-        unpackIntoVector(bloomVector, offset, bitsPerBlock, in);
-    }
-
-    const size_t bitsInLastBlock = elementCount % bitsPerBlock;
-    if (bitsInLastBlock > 0) {
-        const size_t offset = bitsPerBlock * fullBlocks;
-        unpackIntoVector(bloomVector, offset, bitsInLastBlock, in);
-    }
-
+static vector<BlockType> readVectorFromStream(BinaryInputStream &in) {
+    vector<BlockType> bloomVector((istreambuf_iterator<BlockType>(in)), istreambuf_iterator<BlockType>());
     return bloomVector;
 }
 
-static void unpackIntoVector(vector<bool> &bloomVector,
-                             size_t offset,
-                             size_t bitsInThisBlock,
-                             BinaryInputStream &in) {
-
-    const BlockType block = in.get();
-
-    for (int j = 0; j < bitsInThisBlock; j++) {
-        const BlockType mask = 1 << j;
-        bloomVector[offset + j] = (block & mask) != 0;
-    }
+size_t BloomFilter::getBitCount() const {
+    return bitCount;
 }
