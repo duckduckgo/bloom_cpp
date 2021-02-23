@@ -30,7 +30,7 @@ typedef unsigned int hash_t;
 
 static void checkArchitecture();
 
-static size_t calculateHashRounds(size_t size, size_t maxItems);
+static hash_rounds_t calculateHashRounds(size_t size, size_t maxItems);
 
 static hash_t djb2Hash(const string &text);
 
@@ -71,8 +71,8 @@ static void checkArchitecture() {
     }
 }
 
-static size_t calculateHashRounds(size_t size, size_t maxItems) {
-    return (size_t) round(log(2.0) * size / maxItems);
+static hash_rounds_t calculateHashRounds(size_t size, size_t maxItems) {
+    return (hash_rounds_t) round(log(2.0) * size / maxItems);
 }
 
 void BloomFilter::add(const string &element) {
