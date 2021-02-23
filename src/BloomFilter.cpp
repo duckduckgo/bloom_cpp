@@ -24,15 +24,19 @@ static const size_t BITS_PER_BLOCK = 8;
 
 // Forward declarations
 
+typedef unsigned int hash_rounds_t;
+
+typedef unsigned int hash_t;
+
 static void checkArchitecture();
 
 static size_t calculateHashRounds(size_t size, size_t maxItems);
 
-static unsigned int djb2Hash(const string &text);
+static hash_t djb2Hash(const string &text);
 
-static unsigned int sdbmHash(const string &text);
+static hash_t sdbmHash(const string &text);
 
-static unsigned int doubleHash(unsigned int hash1, unsigned int hash2, unsigned int round);
+static hash_t doubleHash(hash_t hash1, hash_t hash2, hash_rounds_t round);
 
 static vector<BlockType> readVectorFromFile(const string &path);
 
@@ -75,7 +79,7 @@ void BloomFilter::add(const string &element) {
     unsigned int hash1 = djb2Hash(element);
     unsigned int hash2 = sdbmHash(element);
 
-    for (size_t i = 0; i < hashRounds; i++) {
+    for (hash_rounds_t i = 0; i < hashRounds; i++) {
         unsigned int hash = doubleHash(hash1, hash2, i);
         size_t bitIndex = hash % bitCount;
         size_t blockIndex = bitIndex / BITS_PER_BLOCK;
@@ -89,7 +93,7 @@ bool BloomFilter::contains(const string &element) {
     unsigned int hash1 = djb2Hash(element);
     unsigned int hash2 = sdbmHash(element);
 
-    for (size_t i = 0; i < hashRounds; i++) {
+    for (hash_rounds_t i = 0; i < hashRounds; i++) {
         unsigned int hash = doubleHash(hash1, hash2, i);
         size_t bitIndex = hash % bitCount;
         size_t blockIndex = bitIndex / BITS_PER_BLOCK;
@@ -103,23 +107,23 @@ bool BloomFilter::contains(const string &element) {
     return true;
 }
 
-static unsigned int djb2Hash(const string &text) {
-    unsigned int hash = 5381;
+static hash_t djb2Hash(const string &text) {
+    hash_t hash = 5381;
     for (const char &iterator : text) {
         hash = ((hash << 5) + hash) + iterator;
     }
     return hash;
 }
 
-static unsigned int sdbmHash(const string &text) {
-    unsigned int hash = 0;
+static hash_t sdbmHash(const string &text) {
+    hash_t hash = 0;
     for (const char &iterator : text) {
         hash = iterator + ((hash << 6) + (hash << 16) - hash);
     }
     return hash;
 }
 
-static unsigned int doubleHash(unsigned int hash1, unsigned int hash2, unsigned int round) {
+static hash_t doubleHash(hash_t hash1, hash_t hash2, hash_rounds_t round) {
     switch (round) {
         case 0:
             return hash1;
