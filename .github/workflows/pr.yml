@@ -8,15 +8,12 @@ on:
     branches: [ "develop" ]
 
 jobs:
-  build:
+  unit-tests:
+    name: Unit Tests
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-
-  unit-tests:
-    name: Unit Tests
-    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
