@@ -8,11 +8,21 @@ on:
     branches: [ "develop" ]
 
 jobs:
-  unit-tests:
-
-    name: Unit Tests
-
+  unit-tests-ubuntu:
+    name: Unit Tests (Ubuntu)
     runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Run tests
+      run: ./run_test.sh
+
+  unit-tests-macos:
+    name: Unit Tests (macOS)
+    runs-on: macos-latest
 
     steps:
     - uses: actions/checkout@v3
