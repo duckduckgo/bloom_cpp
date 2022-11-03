@@ -1,8 +1,15 @@
 cmake_minimum_required(VERSION 3.5)
 
 if(APPLE)
-    include_directories(/usr/local/opt/openssl/include)
-    link_directories(/usr/local/opt/openssl/lib)
+    if(EXISTS /usr/local/opt/openssl/)
+        include_directories(/usr/local/opt/openssl/include)
+        link_directories(/usr/local/opt/openssl/lib)
+    endif()
+
+    if(EXISTS /opt/homebrew/opt/openssl@1.1/)
+        include_directories(/opt/homebrew/opt/openssl@1.1/include)
+        link_directories(/opt/homebrew/opt/openssl@1.1/lib)
+    endif()
 endif()
 
 link_libraries(crypto)
