@@ -8,21 +8,15 @@ on:
     branches: [ "develop" ]
 
 jobs:
-  unit-tests-ubuntu:
-    name: Unit Tests (Ubuntu)
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+  unit-tests:
+    name: Unit Tests
     runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        submodules: recursive
-
-    - name: Run tests
-      run: ./run_test.sh
-
-  unit-tests-macos:
-    name: Unit Tests (macOS)
-    runs-on: macos-latest
 
     steps:
     - uses: actions/checkout@v3
