@@ -2,8 +2,7 @@ name: PR Checks
 
 on:
   push:
-    branches:
-      - '**'
+    branches: [ "develop" ]
   pull_request:
     branches: [ "develop" ]
 
