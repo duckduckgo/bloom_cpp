@@ -8,7 +8,7 @@ if(APPLE)
     endif()
 elseif(WIN32)
     if(EXISTS "C:/Program Files/OpenSSL-Win64")
-        set(OPENSSL_ROOT_DIR "C:/Program FIles/OpenSSL-Win64")
+        set(OPENSSL_ROOT_DIR "C:/Program Files/OpenSSL-Win64")
     endif()
 endif()
 
