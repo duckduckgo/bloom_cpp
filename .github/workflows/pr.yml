@@ -21,3 +21,4 @@ jobs:
 
     - name: Run tests
       run: ./run_test.sh
+      shell: bash
