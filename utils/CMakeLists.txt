@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
 
-add_executable (GenerateFilter GenerateFilter.cpp)
-
 if(APPLE)
     if(EXISTS /usr/local/opt/openssl/)
         set(OPENSSL_ROOT_DIR /usr/local/opt/openssl)
@@ -11,4 +9,6 @@ if(APPLE)
 endif()
 
 find_package (OpenSSL REQUIRED)
+
+add_executable (GenerateFilter GenerateFilter.cpp)
 target_link_libraries (GenerateFilter LINK_PUBLIC BloomFilter OpenSSL::Crypto)
