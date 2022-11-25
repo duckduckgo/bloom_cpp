@@ -1,3 +1,5 @@
 .idea
+.swiftpm
+.build
 cmake-build-debug
 build
