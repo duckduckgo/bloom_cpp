@@ -20,8 +20,7 @@ let package = Package(
             name: "BloomFilter",
             path: "src",
             resources: [
-                .process("CMakeLists.txt"),
-                .process("module.modulemap")
+                .process("CMakeLists.txt")
             ]),
     ],
     cxxLanguageStandard: .cxx11
