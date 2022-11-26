@@ -7,7 +7,7 @@ import Foundation
 let package = Package(
     name: "BloomFilter",
     platforms: [
-        .iOS("13.0"),
+        .iOS("14.0"),
         .macOS("10.15")
     ],
     products: [
