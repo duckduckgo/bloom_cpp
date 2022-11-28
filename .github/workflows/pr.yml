@@ -19,6 +19,12 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Run tests
+    - name: Run CPP tests
       run: ./run_test.sh
       shell: bash
+
+    - name: Run Swift tests
+      run: |
+        swift test \
+          --xunit-output tests.xml
+
