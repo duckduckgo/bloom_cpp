@@ -19,6 +19,11 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Run tests
+    - name: Run CPP tests
       run: ./run_test.sh
       shell: bash
+
+    - name: Run Swift build
+      run: |
+        swift build
+
