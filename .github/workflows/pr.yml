@@ -23,8 +23,7 @@ jobs:
       run: ./run_test.sh
       shell: bash
 
-    - name: Run Swift tests
+    - name: Run Swift build
       run: |
-        swift test \
-          --xunit-output tests.xml
+        swift build
 
