@@ -1,20 +1,27 @@
-// swift-tools-version:5.7
+// swift-tools-version: 5.7
+// The swift-tools-version declares the minimum version of Swift required to build this package.
+
 import PackageDescription
 
 let package = Package(
     name: "BloomFilter",
     platforms: [
-        .iOS("14.0"),
-        .macOS("10.15")
+        .iOS(.v14),
+        .macOS(.v10_15)
     ],
     products: [
-        .library(name: "BloomFilter", targets: ["BloomFilter"]),
+        .library(
+            name: "BloomFilter",
+            targets: ["BloomFilter"]
+        ),
     ],
     targets: [
         .target(
             name: "BloomFilter",
-            path: ".",
-            sources: ["BloomFilter.cpp"]),
+            path: "src",
+            sources: ["BloomFilter.cpp"],
+            publicHeadersPath: "."
+        )
     ],
     cxxLanguageStandard: .cxx11
 )
