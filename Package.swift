@@ -19,7 +19,8 @@ let package = Package(
         .target(
             name: "BloomFilter",
             path: "src",
-            sources: ["BloomFilter.cpp"],
+            sources: ["BloomFilter.cpp",
+                      "BloomFilter.hpp"],
             publicHeadersPath: "."
         )
     ],
