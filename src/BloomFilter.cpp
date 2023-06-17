@@ -105,16 +105,16 @@ bool BloomFilter::contains(const string &element) {
 
 static unsigned int djb2Hash(const string &text) {
     unsigned int hash = 5381;
-    for (const char &iterator : text) {
-        hash = ((hash << 5) + hash) + iterator;
+    for (auto ch : text) {
+        hash = ((hash << 5) + hash) + static_cast<unsigned char>(ch);
     }
     return hash;
 }
 
 static unsigned int sdbmHash(const string &text) {
     unsigned int hash = 0;
-    for (const char &iterator : text) {
-        hash = iterator + ((hash << 6) + (hash << 16) - hash);
+    for (auto ch : text) {
+        hash = static_cast<unsigned char>(ch) + ((hash << 6) + (hash << 16) - hash);
     }
     return hash;
 }
