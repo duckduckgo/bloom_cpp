@@ -1,3 +1,5 @@
 .idea
 cmake-build-debug
 build
+.swiftpm/
+.DS_Store

@@ -22,3 +22,7 @@ jobs:
     - name: Run tests
       run: ./run_test.sh
       shell: bash
+
+    - name: Run Swift build
+      run: |
+        swift build
