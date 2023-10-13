@@ -20,6 +20,8 @@
 #include <fstream>
 #include "BloomFilter.hpp"
 
+using namespace std;
+
 static const size_t BITS_PER_BLOCK = 8;
 
 // Forward declarations
