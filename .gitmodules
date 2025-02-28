@@ -1,3 +1,0 @@
-[submodule "third-party/catch2"]
-	path = third-party/catch2
-	url = https://github.com/duckduckgo/Catch2.git
