@@ -11,13 +11,17 @@ jobs:
     name: Unit Tests
     strategy:
       matrix:
-        os: [ubuntu-20.04, macos-latest]
+        os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v3
       with:
         submodules: recursive
+
+    - name: Install uuid-dev on Ubuntu
+      if: runner.os == 'Linux'
+      run: sudo apt-get update && sudo apt-get install -y uuid-dev
 
     - name: Run tests
       run: ./run_test.sh
