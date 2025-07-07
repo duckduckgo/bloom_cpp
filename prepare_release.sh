@@ -248,10 +248,20 @@ create_framework() {
 </plist>
 EOF
 
+	# Create an umbrella header for better compatibility
+	cat > "$framework_dir/Headers/BloomFilter.h" << EOF
+#ifndef BLOOMFILTER_H
+#define BLOOMFILTER_H
+
+#include "BloomFilter.hpp"
+
+#endif /* BLOOMFILTER_H */
+EOF
+
 	# Create module.modulemap
 	cat > "$framework_dir/Modules/module.modulemap" << EOF
 framework module $framework_name {
-    umbrella header "BloomFilter.hpp"
+    umbrella header "BloomFilter.h"
     export *
     module * { export * }
 }
@@ -398,6 +408,11 @@ make_release() {
 	          url: "https://github.com/duckduckgo/bloom_cpp/releases/download/${new_version}/BloomFilter.xcframework.zip",
 	          checksum: "${checksum}"
 	      )
+	
+	💡 Usage in your code:
+	   Swift: import BloomFilter
+	   C++:   #include <BloomFilter/BloomFilter.h>
+	   ObjC++: #import <BloomFilter/BloomFilter.h>
 	EOF
 
 	if [[ "$dry_run" == "1" ]]; then
