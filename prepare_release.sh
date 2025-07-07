@@ -179,43 +179,73 @@ create_framework() {
 	local platform=$1
 	local arch=$2
 	local install_dir="${workdir}/install-${platform}-${arch}"
-	local framework_dir="${workdir}/frameworks/BloomFilter-${platform}-${arch}.framework"
+	local framework_dir="${workdir}/frameworks/${platform}-${arch}/BloomFilter.framework"
 	local framework_name="BloomFilter"
-	local framework_binary_name="BloomFilter-${platform}-${arch}"
 
 	printf '%s' "  * Creating framework for ${platform} ${arch} ... "
 
 	mkdir -p "$framework_dir"
 
-	# Create framework structure
-	mkdir -p "$framework_dir/Headers"
-	mkdir -p "$framework_dir/Modules"
-
-	# Copy library (binary name should match framework directory name without .framework extension)
-	cp "$install_dir/libBloomFilter.a" "$framework_dir/$framework_binary_name"
-
-	# Copy headers
-	local abs_cwd="$(cd "$cwd" && pwd)"
-	cp "$abs_cwd/src/BloomFilter.hpp" "$framework_dir/Headers/"
+	# Create framework structure based on platform
+	if [[ "$platform" == "macOS" ]]; then
+		# macOS uses deep bundle structure
+		mkdir -p "$framework_dir/Versions/A/Headers"
+		mkdir -p "$framework_dir/Versions/A/Modules"
+		mkdir -p "$framework_dir/Versions/A/Resources"
+		
+		# Create symlinks for deep bundle structure
+		ln -sf "A" "$framework_dir/Versions/Current"
+		ln -sf "Versions/Current/Headers" "$framework_dir/Headers"
+		ln -sf "Versions/Current/Modules" "$framework_dir/Modules"
+		ln -sf "Versions/Current/Resources" "$framework_dir/Resources"
+		ln -sf "Versions/Current/$framework_name" "$framework_dir/$framework_name"
+		
+		# Copy library
+		cp "$install_dir/libBloomFilter.a" "$framework_dir/Versions/A/$framework_name"
+		
+		# Copy headers
+		local abs_cwd="$(cd "$cwd" && pwd)"
+		cp "$abs_cwd/src/BloomFilter.hpp" "$framework_dir/Versions/A/Headers/"
+	else
+		# iOS uses shallow bundle structure
+		mkdir -p "$framework_dir/Headers"
+		mkdir -p "$framework_dir/Modules"
+		
+		# Copy library
+		cp "$install_dir/libBloomFilter.a" "$framework_dir/$framework_name"
+		
+		# Copy headers
+		local abs_cwd="$(cd "$cwd" && pwd)"
+		cp "$abs_cwd/src/BloomFilter.hpp" "$framework_dir/Headers/"
+	fi
 
 	# Create Info.plist with platform-specific settings
-	local min_os_version supported_platforms
+	local min_os_version supported_platforms info_plist_path headers_path modules_path
 	case "$platform" in
 		"macOS")
 			min_os_version="10.15"
 			supported_platforms="<string>MacOSX</string>"
+			info_plist_path="$framework_dir/Versions/A/Resources/Info.plist"
+			headers_path="$framework_dir/Versions/A/Headers"
+			modules_path="$framework_dir/Versions/A/Modules"
 			;;
 		"iOS")
 			min_os_version="14.0"
 			supported_platforms="<string>iPhoneOS</string>"
+			info_plist_path="$framework_dir/Info.plist"
+			headers_path="$framework_dir/Headers"
+			modules_path="$framework_dir/Modules"
 			;;
 		"iOS-Simulator")
 			min_os_version="14.0"
 			supported_platforms="<string>iPhoneSimulator</string>"
+			info_plist_path="$framework_dir/Info.plist"
+			headers_path="$framework_dir/Headers"
+			modules_path="$framework_dir/Modules"
 			;;
 	esac
 	
-	cat > "$framework_dir/Info.plist" << EOF
+	cat > "$info_plist_path" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -223,7 +253,7 @@ create_framework() {
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleExecutable</key>
-	<string>$framework_binary_name</string>
+	<string>$framework_name</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.duckduckgo.BloomFilter</string>
 	<key>CFBundleInfoDictionaryVersion</key>
@@ -249,7 +279,7 @@ create_framework() {
 EOF
 
 	# Create an umbrella header for better compatibility
-	cat > "$framework_dir/Headers/BloomFilter.h" << EOF
+	cat > "$headers_path/BloomFilter.h" << EOF
 #ifndef BLOOMFILTER_H
 #define BLOOMFILTER_H
 
@@ -259,7 +289,7 @@ EOF
 EOF
 
 	# Create module.modulemap
-	cat > "$framework_dir/Modules/module.modulemap" << EOF
+	cat > "$modules_path/module.modulemap" << EOF
 framework module $framework_name {
     umbrella header "BloomFilter.h"
     export *
@@ -336,9 +366,9 @@ build_xcframework() {
 	
 	# Include all platform frameworks
 	xcodebuild -create-xcframework \
-		-framework "${workdir}/frameworks/BloomFilter-macOS-universal.framework" \
-		-framework "${workdir}/frameworks/BloomFilter-iOS-arm64.framework" \
-		-framework "${workdir}/frameworks/BloomFilter-iOS-Simulator-universal.framework" \
+		-framework "${workdir}/frameworks/macOS-universal/BloomFilter.framework" \
+		-framework "${workdir}/frameworks/iOS-arm64/BloomFilter.framework" \
+		-framework "${workdir}/frameworks/iOS-Simulator-universal/BloomFilter.framework" \
 		-output "$xcframework" >/dev/null 2>&1
 	echo "✅"
 	
