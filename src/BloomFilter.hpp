@@ -17,13 +17,12 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <iterator>
 
 using namespace std;
 
-typedef char BlockType;
-typedef basic_istream<BlockType> BinaryInputStream;
-typedef basic_ostream<BlockType> BinaryOutputStream;
+using BlockType = char;
+using BinaryInputStream = basic_istream<BlockType>;
+using BinaryOutputStream = basic_ostream<BlockType>;
 
 /*
  Bloom filter with djb2 and sdbm hashing. It is a loose C++ port of

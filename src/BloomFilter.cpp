@@ -18,13 +18,13 @@
 #include <cmath>
 #include <cstdio>
 #include <fstream>
+#include <iterator>
 #include "BloomFilter.hpp"
 
-static const size_t BITS_PER_BLOCK = 8;
+constexpr size_t BITS_PER_BLOCK = 8;
+static_assert(CHAR_BIT == BITS_PER_BLOCK, "Unsupported architecture: char is not 8 bit");
 
 // Forward declarations
-
-static void checkArchitecture();
 
 static size_t calculateHashRounds(size_t size, size_t maxItems);
 
@@ -42,7 +42,6 @@ static vector<BlockType> readVectorFromStream(BinaryInputStream &in);
 // Implementation
 
 BloomFilter::BloomFilter(size_t maxItems, double targetProbability) {
-    checkArchitecture();
     bitCount = (size_t) ceil((maxItems * log(targetProbability)) / log(1.0 / (pow(2.0, log(2.0)))));
     auto blocks = (size_t) ceil(bitCount / (double) BITS_PER_BLOCK);
     bloomVector = vector<BlockType>(blocks);
@@ -50,21 +49,13 @@ BloomFilter::BloomFilter(size_t maxItems, double targetProbability) {
 }
 
 BloomFilter::BloomFilter(const string &importFilePath, size_t bitCount, size_t maxItems) : bitCount(bitCount) {
-    checkArchitecture();
     bloomVector = readVectorFromFile(importFilePath);
     hashRounds = calculateHashRounds(bitCount, maxItems);
 }
 
 BloomFilter::BloomFilter(BinaryInputStream &in, size_t bitCount, size_t maxItems) : bitCount(bitCount) {
-    checkArchitecture();
     bloomVector = readVectorFromStream(in);
     hashRounds = calculateHashRounds(bitCount, maxItems);
-}
-
-static void checkArchitecture() {
-    if (CHAR_BIT != BITS_PER_BLOCK) {
-        throw std::runtime_error("Unsupported architecture: char is not 8 bit");
-    }
 }
 
 static size_t calculateHashRounds(size_t size, size_t maxItems) {

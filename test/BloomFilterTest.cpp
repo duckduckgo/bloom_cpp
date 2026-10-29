@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <iostream>
+#include <string>
 #include <uuid/uuid.h>
 #include "BloomFilter.hpp"
 
@@ -22,12 +22,12 @@
 
 using namespace std;
 
-static const unsigned int FILTER_ELEMENT_COUNT = 5000;
-static const unsigned int FILTER_ELEMENT_COUNT_NOT_DIVISIBLE_BY_8_BITS = 5111;
-static const unsigned int ADDITIONAL_TEST_DATA_ELEMENT_COUNT = 5000;
-static const double TARGET_ERROR_RATE = 0.001;
-static const double ACCEPTABLE_ERROR_RATE = TARGET_ERROR_RATE * 2;
-static const string FILE_PATH = "test-bloom-filter.bin";
+constexpr unsigned int FILTER_ELEMENT_COUNT = 5000;
+constexpr unsigned int FILTER_ELEMENT_COUNT_NOT_DIVISIBLE_BY_8_BITS = 5111;
+constexpr unsigned int ADDITIONAL_TEST_DATA_ELEMENT_COUNT = 5000;
+constexpr double TARGET_ERROR_RATE = 0.001;
+constexpr double ACCEPTABLE_ERROR_RATE = TARGET_ERROR_RATE * 2;
+constexpr const char* FILE_PATH = "test-bloom-filter.bin";
 
 static string createRandomString() {
     uuid_t id;
